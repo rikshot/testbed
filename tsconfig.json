@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "rootDirs": [
+      "src",
+      "test"
+    ],
+    "strict": true,
+    "baseUrl": "src",
+    "outDir": "build",
+    "pretty": true,
+    "inlineSourceMap": true
+  }
+}

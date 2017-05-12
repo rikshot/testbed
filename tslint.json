@@ -1,0 +1,22 @@
+{
+    "extends": [
+        "tslint:latest"
+    ],
+    "rules": {
+        "quotemark": [
+            "single"
+        ],
+        "object-literal-sort-keys": false,
+        "trailing-comma": [
+            true,
+            {
+                "multiline": "never",
+                "singleline": "never"
+            }
+        ],
+        "variable-name": [
+            "check-format",
+            "allow-leading-underscore"
+        ]
+    }
+}
