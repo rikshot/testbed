@@ -5,7 +5,7 @@ MOCHA := $(BIN)/_mocha
 ISTANBUL := $(BIN)/istanbul
 REMAP_ISTANBUL := $(BIN)/remap-istanbul
 
-SOURCE_DIR := src
+SOURCE_DIR := src/ts
 TEST_DIR := test
 BUILD_DIR := build
 COVERAGE_DIR := coverage
@@ -13,8 +13,8 @@ COVERAGE_DIR := coverage
 SOURCES := $(shell find $(SOURCE_DIR) -type f -name *.ts | xargs)
 TESTS := $(shell find $(TEST_DIR) -type f -name *Test.ts | xargs)
 
-TARGETS := $(shell echo $(SOURCES) | sed s/.ts/.js/g | sed s/$(SOURCE_DIR)/$(BUILD_DIR)\\/$(SOURCE_DIR)/g)
-TEST_TARGETS := $(shell echo $(TESTS) | sed s/.ts/.js/g | sed s/$(TEST_DIR)/$(BUILD_DIR)\\/$(TEST_DIR)/g)
+TARGETS := $(shell echo $(SOURCES) | sed -r 's|\.ts|.js|g' | sed 's|$(SOURCE_DIR)|$(BUILD_DIR)/$(SOURCE_DIR)|g')
+TEST_TARGETS := $(shell echo $(TESTS) | sed -r 's|\.ts|.js|g' | sed 's|$(TEST_DIR)|$(BUILD_DIR)/$(TEST_DIR)|g')
 
 .PHONY: all test test-coverage clean lint
 
@@ -30,7 +30,6 @@ test: all $(TEST_TARGETS)
 test-coverage: MODULE := commonjs
 test-coverage: TARGET := es2015
 test-coverage: all $(TEST_TARGETS)
-	@rm -rf $(COVERAGE_DIR)
 	@NODE_PATH=$(BUILD_DIR)/$(SOURCE_DIR):$(BUILD_DIR)/$(TEST_DIR) $(ISTANBUL) cover --report none --dir $(COVERAGE_DIR) --include-all-sources $(MOCHA) -- $(BUILD_DIR)/$(TEST_DIR)
 	@$(REMAP_ISTANBUL) -i $(COVERAGE_DIR)/coverage.json -o $(COVERAGE_DIR)/report -t html
 
@@ -48,7 +47,7 @@ $(BUILD_DIR):
 
 clean:
 	@rm -rf $(BUILD_DIR)
-	@rm -rf coverage
+	@rm -rf $(COVERAGE_DIR)
 	@find $(SOURCE_DIR) -type f -name *.js | xargs rm -rf
 	@find $(TEST_DIR) -type f -name *.js | xargs rm -rf
 

@@ -17,6 +17,7 @@
         "variable-name": [
             "check-format",
             "allow-leading-underscore"
-        ]
+        ],
+        "no-object-literal-type-assertion": false
     }
 }

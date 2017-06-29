@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
     "rootDirs": [
-      "src",
+      "src/ts",
       "test"
     ],
     "strict": true,
-    "baseUrl": "src",
+    "baseUrl": "src/ts",
     "outDir": "build",
     "pretty": true,
     "inlineSourceMap": true

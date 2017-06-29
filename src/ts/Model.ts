@@ -5,24 +5,31 @@ export type ISchema<T extends object> = {
 };
 
 export abstract class Model<T extends object> {
+    private readonly _name: string;
     private _data: T;
     private readonly _schema: ISchema<T>;
 
-    constructor(data: T, schema: ISchema<T>) {
-        this._data = data;
+    constructor(name: string, data: T, schema: ISchema<T>) {
+        this._name = name;
+        this._data = {} as T;
         this._schema = schema;
+        for (const key in data) {
+            if (data.hasOwnProperty(key)) {
+                this.set(key, data[key]);
+            }
+        }
     }
 
     public abstract getDTO(): { [key: string]: any };
 
     protected set<K extends keyof T>(key: K, value: T[K]): void {
-         if (!(key in this._schema)) {
-            throw new Error(key + ' (' + typeof key + ') is not in: ' + this._schema);
+        if (!(key in this._schema)) {
+            throw new Error(this._name + ' - ' + key + ' (' + typeof key + ') is not in: ' + this._schema);
         }
-         if (this.checkValue(value, this._schema[key])) {
+        if (this.checkValue(value, this._schema[key])) {
             this._data[key] = value;
         } else {
-            throw new Error(value + ' (' + typeof value + ') is not in: ' + this._schema[key]);
+            throw new Error(this._name + ' - ' + value + ' (' + typeof value + ') is not in: ' + this._schema[key]);
         }
     }
 

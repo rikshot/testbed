@@ -1,4 +1,5 @@
 import { Car } from 'Models/Car';
+import { Truck } from 'Models/Truck';
 
 const car = new Car({
     make: 'Volvo',
@@ -6,5 +7,3 @@ const car = new Car({
     seats: 4,
     fuel: 400
 });
-
-console.dir(car);

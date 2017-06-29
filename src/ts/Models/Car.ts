@@ -13,7 +13,7 @@ export class Car extends Vehicle<ICar> {
     };
 
     public constructor(data: ICar) {
-        super(data, Car.Schema);
+        super('Car', data, Car.Schema);
     }
 
     public getSeats() {

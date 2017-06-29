@@ -1,0 +1,6 @@
+[package]
+name = "testbed"
+version = "0.1.0"
+authors = ["Ville Orkas <villeo@unity3d.com>"]
+
+[dependencies]
