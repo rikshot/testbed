@@ -1,43 +1,56 @@
-BIN := node_modules/.bin
+MAKEFLAGS += -rR
+
+.SUFFIXES:
+.SUFFIXES: .js .ts
+
+ROOT := $(CURDIR)
+SOURCE_DIR := $(ROOT)/src
+TEST_DIR := $(ROOT)/test
+BUILD_DIR := $(ROOT)/build
+SOURCE_BUILD_DIR := $(BUILD_DIR)/src
+TEST_BUILD_DIR := $(BUILD_DIR)/test
+COVERAGE_DIR := $(BUILD_DIR)/coverage
+
+BIN := $(ROOT)/node_modules/.bin
 TSC := $(BIN)/tsc
 TSLINT := $(BIN)/tslint
 MOCHA := $(BIN)/_mocha
 ISTANBUL := $(BIN)/istanbul
 REMAP_ISTANBUL := $(BIN)/remap-istanbul
 
-SOURCE_DIR := src/ts
-TEST_DIR := test
-BUILD_DIR := build
-COVERAGE_DIR := coverage
+SOURCES := $(shell find $(SOURCE_DIR)/ts -type f -name '*.ts' -and -not -name '*.d.ts')
+TESTS := $(shell find $(TEST_DIR)/ts -type f -name '*Test.ts' -and -not -name '*.d.ts')
 
-SOURCES := $(shell find $(SOURCE_DIR) -type f -name *.ts | xargs)
-TESTS := $(shell find $(TEST_DIR) -type f -name *Test.ts | xargs)
+TARGETS := $(shell echo $(SOURCES) | sed -r 's|\.ts|.js|g' | sed 's|$(SOURCE_DIR)/ts|$(SOURCE_BUILD_DIR)/ts|g')
+TEST_TARGETS := $(shell echo $(TESTS) | sed -r 's|\.ts|.js|g' | sed 's|$(TEST_DIR)/ts|$(TEST_BUILD_DIR)/ts|g')
 
-TARGETS := $(shell echo $(SOURCES) | sed -r 's|\.ts|.js|g' | sed 's|$(SOURCE_DIR)|$(BUILD_DIR)/$(SOURCE_DIR)|g')
-TEST_TARGETS := $(shell echo $(TESTS) | sed -r 's|\.ts|.js|g' | sed 's|$(TEST_DIR)|$(BUILD_DIR)/$(TEST_DIR)|g')
+TS_MODULE := commonjs
+TS_TARGET := es2015
 
-.PHONY: all test test-coverage clean lint
+.PHONY: all test test-coverage clean lint setup
+.NOTPARALLEL: $(TARGETS) $(TEST_TARGETS)
 
-all: MODULE := commonjs
-all: TARGET := es2015 
-all: $(TARGETS)
+all: $(TARGETS) $(SOURCE_BUILD_DIR)/index.html $(SOURCE_BUILD_DIR)/css/main.css
 
-test: MODULE := commonjs
-test: TARGET := es2015
 test: all $(TEST_TARGETS)
-	@NODE_PATH=$(BUILD_DIR)/$(SOURCE_DIR):$(BUILD_DIR)/$(TEST_DIR) $(MOCHA) $(BUILD_DIR)/$(TEST_DIR)
+	@NODE_PATH=$(SOURCE_BUILD_DIR)/ts:$(TEST_BUILD_DIR)/ts $(MOCHA) $(TEST_BUILD_DIR)/ts
 
-test-coverage: MODULE := commonjs
-test-coverage: TARGET := es2015
 test-coverage: all $(TEST_TARGETS)
-	@NODE_PATH=$(BUILD_DIR)/$(SOURCE_DIR):$(BUILD_DIR)/$(TEST_DIR) $(ISTANBUL) cover --report none --dir $(COVERAGE_DIR) --include-all-sources $(MOCHA) -- $(BUILD_DIR)/$(TEST_DIR)
-	@$(REMAP_ISTANBUL) -i $(COVERAGE_DIR)/coverage.json -o $(COVERAGE_DIR)/report -t html
+	@NODE_PATH=$(SOURCE_BUILD_DIR)/ts:$(TEST_BUILD_DIR)/ts $(ISTANBUL) cover --report none --dir $(COVERAGE_DIR)/ts --include-all-sources $(MOCHA) -- $(TEST_BUILD_DIR)/ts
+	@$(REMAP_ISTANBUL) -i $(COVERAGE_DIR)/ts/coverage.json -o $(COVERAGE_DIR)/ts/report -t html
 
-$(TARGETS): $(BUILD_DIR)/$(SOURCE_DIR)/%.js: $(SOURCE_DIR)/%.ts
-	@$(TSC) --module $(MODULE) --target $(TARGET) --project .
+$(SOURCE_BUILD_DIR)/index.html:
+	@cp $(SOURCE_DIR)/html/index.html $(SOURCE_BUILD_DIR)
 
-$(TEST_TARGETS): $(BUILD_DIR)/$(TEST_DIR)/%.js: $(TEST_DIR)/%.ts
-	@$(TSC) --module $(MODULE) --target $(TARGET) --project .
+$(SOURCE_BUILD_DIR)/css/main.css:
+	@mkdir -p $(SOURCE_BUILD_DIR)/css
+	@cp $(SOURCE_DIR)/css/main.css $(SOURCE_BUILD_DIR)/css/
+
+$(TARGETS): $(SOURCE_BUILD_DIR)/ts/%.js: $(SOURCE_DIR)/ts/%.ts
+	@$(TSC) --module $(TS_MODULE) --target $(TS_TARGET) --project .
+
+$(TEST_TARGETS): $(TEST_BUILD_DIR)/ts/%.js: $(TEST_DIR)/ts/%.ts
+	@$(TSC) --module $(TS_MODULE) --target $(TS_TARGET) --project .
 
 $(TARGETS): | $(BUILD_DIR)
 $(TEST_TARGETS): | $(BUILD_DIR)
@@ -47,9 +60,10 @@ $(BUILD_DIR):
 
 clean:
 	@rm -rf $(BUILD_DIR)
-	@rm -rf $(COVERAGE_DIR)
-	@find $(SOURCE_DIR) -type f -name *.js | xargs rm -rf
-	@find $(TEST_DIR) -type f -name *.js | xargs rm -rf
 
 lint:
-	@$(TSLINT) --project tsconfig.json --type-check --fix $(SOURCES) $(TESTS)
+	@$(TSLINT) --project tsconfig.json --type-check $(SOURCES) $(TESTS)
+
+setup: clean
+	@rm -rf node_modules
+	@npm install

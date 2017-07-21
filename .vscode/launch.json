@@ -17,10 +17,11 @@
                 "--timeout",
                 "999999",
                 "--colors",
-                "${workspaceRoot}/build/test"
+                "${workspaceRoot}/build/test/ts"
             ],
+            "runtimeArgs": [ "--nolazy" ],
             "env": {
-                "NODE_PATH": "${workspaceRoot}/build/src:${workspaceRoot}/build/test"
+                "NODE_PATH": "${workspaceRoot}/build/src/ts:${workspaceRoot}/build/test/ts"
             },
             "internalConsoleOptions": "openOnSessionStart"
         }

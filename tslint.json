@@ -18,6 +18,10 @@
             "check-format",
             "allow-leading-underscore"
         ],
-        "no-object-literal-type-assertion": false
+        "no-object-literal-type-assertion": false,
+        "max-line-length": [
+            false
+        ],
+        "no-angle-bracket-type-assertion": false
     }
 }

@@ -2,7 +2,7 @@
   "compilerOptions": {
     "rootDirs": [
       "src/ts",
-      "test"
+      "test/ts"
     ],
     "strict": true,
     "baseUrl": "src/ts",
