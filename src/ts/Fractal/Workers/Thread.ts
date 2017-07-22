@@ -34,20 +34,52 @@ class Color {
 
 }
 
+class NumberRange {
+
+    public static Scale(input: NumberRange, value: number, output: NumberRange): number {
+        return (input.max() * output.min() - input.min() * output.max() + value * output.size()) / input.size();
+    }
+
+    private readonly _min: number;
+    private readonly _max: number;
+    private readonly _size: number;
+
+    constructor(min: number, max: number) {
+        this._min = min;
+        this._max = max;
+        this._size = Math.abs(max - min);
+    }
+
+    public min() {
+        return this._min;
+    }
+
+    public max() {
+        return this._max;
+    }
+
+    public size() {
+        return this._size;
+    }
+
+}
+
 ((self: Worker) => {
     const log2 = Math.log(2);
 
-    const scale = (range1_min: number, range1_max: number, range2_min: number, range2_max: number, value: number) => {
-        const range1_size = Math.abs(range1_max - range1_min);
-        const range2_size = Math.abs(range2_max - range2_min);
-        return (range1_max * range2_min - range1_min * range2_max) / range1_size + value * (range2_size / range1_size);
-    };
-
     self.onmessage = (event: MessageEvent) => {
-        const config: IThreadConfig = event.data;
+        const threadConfig: IThreadConfig = event.data;
+        const config = threadConfig.config;
 
-        const rows = config.end - config.start;
-        const data = new Uint8ClampedArray(rows * config.width * 4);
+        const stride = threadConfig.width * 4;
+        const rows = threadConfig.end - threadConfig.start;
+        let data: Uint8ClampedArray;
+        if (threadConfig.buffer) {
+            data = new Uint8ClampedArray(threadConfig.buffer, threadConfig.start * stride, rows * stride);
+        } else {
+            data = new Uint8ClampedArray(rows * stride);
+
+        }
         let index = 0;
 
         const colors: Color[] = [];
@@ -60,10 +92,15 @@ class Color {
             ));
         }
 
-        for (let y = config.start; y < config.end; ++y) {
-            for (let x = 0; x < config.width; ++x) {
-                const i0 = scale(0, config.width, -2.5, 1.0, x);
-                const j0 = scale(0, config.height, -1.0, 1.0, y);
+        const widthRange = new NumberRange(0, threadConfig.width);
+        const heightRange = new NumberRange(0, threadConfig.height);
+        const realRange = new NumberRange(-2.5, 1.0);
+        const imaginaryRange = new NumberRange(-1.0, 1.0);
+
+        for (let y = threadConfig.start; y < threadConfig.end; ++y) {
+            for (let x = 0; x < threadConfig.width; ++x) {
+                const i0 = NumberRange.Scale(widthRange, x, realRange);
+                const j0 = NumberRange.Scale(heightRange, y, imaginaryRange);
 
                 const jj0 = j0 * j0;
                 let q = (i0 - 0.25);
@@ -77,8 +114,14 @@ class Color {
                     let ii = 0;
                     let jj = 0;
                     for (let i = 0, j = 0; ii + jj <= 4 && iterations <= config.iterations; ii = i * i, jj = j * j, ++iterations) {
-                        j = 2 * i * j + j0;
-                        i = ii - jj + i0;
+                        const itemp = ii - jj + i0;
+                        const jtemp = 2 * i * j + j0;
+                        if (i === itemp && j === jtemp) {
+                            iterations = config.iterations;
+                            break;
+                        }
+                        i = itemp;
+                        j = jtemp;
                     }
 
                     const color = colors[Math.floor((iterations - Math.log(Math.log(ii + jj) / 2) / log2) * config.density) % (colors.length - 1)];
@@ -91,6 +134,10 @@ class Color {
                 index += 4;
             }
         }
-        self.postMessage(data.buffer);
+        if (threadConfig.buffer) {
+            self.postMessage(true);
+        } else {
+            self.postMessage(data.buffer, [data.buffer]);
+        }
     };
 })(<Worker> <any> self);
