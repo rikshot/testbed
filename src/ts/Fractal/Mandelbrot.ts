@@ -16,7 +16,7 @@ interface IThreadConfig {
     config: IConfig;
 }
 
-const threadCount = 8;
+const threadCount = navigator.hardwareConcurrency;
 
 const threads: Worker[] = [];
 for (let i = 0; i < threadCount; ++i) {
