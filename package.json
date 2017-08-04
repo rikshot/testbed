@@ -1,17 +1,21 @@
 {
   "name": "testbed",
+  "description": "Test bed for all kinds of frontend things",
+  "repository": {
+    "type": "github",
+    "url": "https://github.com/rikshot/testbed"
+  },
   "version": "1.0.0",
   "author": "Ville Orkas <ville@orkas.fi>",
   "license": "MIT",
   "dependencies": {
-    "@types/chai": "4.0.1",
+    "@types/chai": "4.0.2",
     "@types/mocha": "2.2.41",
+    "@types/systemjs": "0.20.3",
     "chai": "4.1.0",
-    "google-closure-compiler": "20170626.0.0",
-    "istanbul": "0.4.5",
-    "mocha": "3.4.2",
-    "remap-istanbul": "0.9.5",
-    "systemjs": "0.20.15",
+    "mocha": "3.5.0",
+    "nyc": "11.1.0",
+    "systemjs": "0.20.17",
     "tslint": "5.5.0",
     "typescript": "2.4.2"
   }

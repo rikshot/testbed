@@ -14,7 +14,19 @@ class TaskWorker extends Worker {
     public working: boolean;
 }
 
-class Scheduler<T extends Function> {
+export interface IModuleMap {
+    [key: string]: string[];
+}
+
+export interface IQueuedTask {
+    taskId: number;
+    parameters: any[];
+    transferables: any[];
+}
+
+export class Scheduler<R, T extends (...parameters: any[]) => R | Promise<R> = (...parameters: any[]) => R> {
+
+    private readonly _moduleMap?: IModuleMap;
 
     private _workerId = 0;
     private _workers: TaskWorker[] = [];
@@ -22,9 +34,11 @@ class Scheduler<T extends Function> {
     private _taskId = 0;
     private _tasks: { [key: number]: CallbackContainer } = {};
 
-    private _queue: Array<[number, any[], any[]]> = [];
+    private _queue: IQueuedTask[] = [];
 
-    constructor(task: T) {
+    constructor(task: T, moduleMap?: IModuleMap) {
+        this._moduleMap = moduleMap;
+
         const task_source = URL.createObjectURL(new Blob([this.getRunner(task)], {
             type: 'text/javascript'
         }));
@@ -42,16 +56,30 @@ class Scheduler<T extends Function> {
     }
 
     private getRunner(task: T) {
+        let task_source = task.toString();
+        task_source = task_source.substr(task_source.indexOf('(')).replace(/\{/, '=> {');
         return `
-            ((self) => {
+            importScripts('http://localhost:8000/node_modules/systemjs/dist/system.js', 'http://localhost:8000/system.config.js');
+            Promise.all(${ JSON.stringify(Object.keys(this._moduleMap ? this._moduleMap : {})) }.map((requirement) => System.import(requirement))).then(imports => { (self => {
                 self.onmessage = (event) => {
-                    const [taskId, parameters] = event.data;
+                    const [taskId, parameters, moduleMap, transferables] = event.data;
+                    for(const module in moduleMap) {
+                        if(moduleMap.hasOwnProperty(module)) {
+                            for(const exported of moduleMap[module]) {
+                                for(const imported of imports) {
+                                    if(exported in imported) {
+                                        self[exported] = imported[exported];
+                                    }
+                                }
+                            }
+                        }
+                    }
                     try {
-                        const returnValue = (${task.toString()}).apply(self, parameters);
+                        const returnValue = (${ task_source }).apply(self, parameters);
                         if(returnValue instanceof Promise) {
-                            returnValue.then((result) => self.postMessage({taskId, result})).catch((error) => self.postMessage({taskId, error}));
+                            returnValue.then((result) => self.postMessage({taskId, result}, transferables)).catch((error) => self.postMessage({taskId, error}));
                         } else {
-                            self.postMessage({taskId, result: returnValue});
+                            self.postMessage({taskId, result: returnValue}, transferables);
                         }
                     } catch(error) {
                         self.postMessage({
@@ -60,7 +88,7 @@ class Scheduler<T extends Function> {
                         });
                     }
                 };
-            })(self);
+            })(self); });
         `;
     }
 
@@ -73,13 +101,17 @@ class Scheduler<T extends Function> {
             for (const worker of this._workers) {
                 if (!worker.working) {
                     worker.working = true;
-                    worker.postMessage([taskId, parameters ? parameters : []], transferables);
+                    worker.postMessage([taskId, parameters ? parameters : [], this._moduleMap], transferables ? transferables : []);
                     scheduled = true;
                     break;
                 }
             }
             if (!scheduled) {
-                this._queue.push([taskId, parameters ? parameters : [], transferables ? transferables : []]);
+                this._queue.push({
+                    taskId,
+                    parameters: parameters ? parameters : [],
+                    transferables: transferables ? transferables : []
+                });
             }
         });
     }
@@ -100,56 +132,15 @@ class Scheduler<T extends Function> {
 
         const worker = <TaskWorker> event.target;
         if (this._queue.length > 0) {
-            worker.postMessage(this._queue.shift());
+            const queuedTask = this._queue.shift();
+            worker.postMessage([
+                queuedTask!.taskId,
+                queuedTask!.parameters ? queuedTask!.parameters : [],
+                this._moduleMap
+            ], queuedTask!.transferables ? queuedTask!.transferables : []);
         } else {
             worker.working = false;
         }
     }
 
 }
-
-const numbers = 20000000;
-const buffer = new SharedArrayBuffer(numbers * 4);
-const buffer_view = new Uint32Array(buffer);
-
-for (let i = 0; i < numbers; ++i) {
-    buffer_view[i] = i;
-}
-
-let sum = 0;
-console.time('Single-Threaded');
-for (const number of buffer_view) {
-    sum += number;
-}
-console.log('Single-Threaded: ' + sum);
-console.timeEnd('Single-Threaded');
-
-const testTask = (buffer_view: Uint32Array) => {
-    let sum = 0;
-    for (const number of buffer_view) {
-        sum += number;
-    }
-    return sum;
-};
-
-const scheduler = new Scheduler(testTask);
-
-
-
-const slice = Math.floor(numbers / navigator.hardwareConcurrency);
-const promises: Array<Promise<number>> = [];
-console.time('Multi-Threaded');
-for (let i = 0; i < navigator.hardwareConcurrency; ++i) {
-    const length = i === navigator.hardwareConcurrency - 1 ? slice + numbers % navigator.hardwareConcurrency : slice;
-    const slice_view = new Uint32Array(buffer, i * slice * 4, slice);
-    promises.push(scheduler.apply([slice_view]));
-}
-Promise.all(promises).then(results => {
-    console.dir(results);
-    let sum = 0;
-    for (const result of results) {
-        sum += result;
-    }
-    console.log('Multi-Threaded: ' + sum);
-    console.timeEnd('Multi-Threaded');
-});

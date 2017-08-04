@@ -1,144 +1,173 @@
-interface IConfig {
-    density: number;
-    colors: number;
+import { NumberRange } from 'Fractal/NumberRange';
+import { Color } from 'Fractal/Color';
+import { Scheduler } from 'Fractal/Scheduler';
+
+export interface IConfig {
     iterations: number;
     red: number;
     green: number;
     blue: number;
 }
 
-interface IThreadConfig {
+interface IChunkConfig {
     width: number;
     height: number;
-    buffer?: SharedArrayBuffer;
     start: number;
     end: number;
-    config: IConfig;
+    buffer?: ArrayBuffer;
 }
 
-const threadCount = navigator.hardwareConcurrency;
+export class Mandelbrot {
 
-const threads: Worker[] = [];
-for (let i = 0; i < threadCount; ++i) {
-    threads.push(new Worker('ts/Fractal/Workers/Thread.js'));
-}
+    private readonly _canvas: HTMLCanvasElement;
+    private readonly _width: number;
+    private readonly _height: number;
+    private readonly _context: CanvasRenderingContext2D;
 
-const render = (canvas: HTMLCanvasElement, config: IConfig) => {
-    return new Promise((resolve, reject) => {
-        const width = canvas.width = 1920;
-        const height = canvas.height = 1080;
+    private readonly _scheduler: Scheduler<{ data: Uint32Array, chunkConfig: IChunkConfig }>;
 
-        const context = canvas.getContext('2d');
+    constructor(canvas: HTMLCanvasElement) {
+        this._canvas = canvas;
+        this._width = this._canvas.width = 1920;
+        this._height = this._canvas.height = 1080;
+
+        const context = this._canvas.getContext('2d');
         if (!context) {
             throw new Error('Unable to get context');
         }
+        this._context = context;
 
-        const slice = Math.floor(height / threadCount);
-        let done = 0;
-        for (let i = 0; i < threadCount; ++i) {
-            const thread = threads[i];
+        this._scheduler = new Scheduler(this.renderChunk, {
+            'Fractal/Color': ['Color'],
+            'Fractal/NumberRange': ['NumberRange']
+        });
+    }
+
+    public render(config: IConfig) {
+        if (typeof SharedArrayBuffer === 'undefined') {
+            return this.renderTransfered(config);
+        }
+        return this.renderShared(config);
+    }
+
+    private renderTransfered(config: IConfig) {
+        const slice = Math.floor(this._height / navigator.hardwareConcurrency);
+        const promises = [];
+        for (let i = 0; i < navigator.hardwareConcurrency; ++i) {
             const start = i * slice;
-            const onMessage = (event: MessageEvent) => {
-                const data = new Uint8ClampedArray(event.data);
-                context.putImageData(new ImageData(data, width, slice), 0, start);
-                if (++done === threadCount) {
-                    resolve();
-                }
-                thread.removeEventListener('message', onMessage);
-            };
-            thread.addEventListener('message', onMessage);
-            thread.postMessage(<IThreadConfig> {
-                width,
-                height,
+            const chunkConfig = {
+                width: this._width,
+                height: this._height,
                 start,
-                end: start + slice,
-                config
-            });
+                end: start + slice
+            };
+            promises.push(this._scheduler.apply([config, chunkConfig]));
         }
-    });
-};
+        return Promise.all(promises).then((results) => {
+            for (const { data, chunkConfig } of results) {
+                this._context.putImageData(new ImageData(new Uint8ClampedArray(data.buffer), this._width, slice), 0, chunkConfig.start);
+            }
+        });
+    }
 
-const renderShared = (canvas: HTMLCanvasElement, config: IConfig) => {
-    return new Promise((resolve, reject) => {
-        const width = canvas.width = 1920;
-        const height = canvas.height = 1080;
+    private renderShared(config: IConfig) {
+        const slice = Math.floor(this._height / navigator.hardwareConcurrency);
+        const stride = this._width * 4;
+        const buffer = new SharedArrayBuffer(this._height * stride);
 
-        const context = canvas.getContext('2d');
-        if (!context) {
-            throw new Error('Unable to get context');
-        }
-
-        const slice = Math.floor(height / threadCount);
-        const stride = width * 4;
-        const buffer = new SharedArrayBuffer(height * stride);
-
-        let done = 0;
-        for (let i = 0; i < threadCount; ++i) {
-            const thread = threads[i];
+        const promises = [];
+        for (let i = 0; i < navigator.hardwareConcurrency; ++i) {
             const start = i * slice;
-            const end = start + slice;
-
-            const onMessage = (event: MessageEvent) => {
-                const buffer_view = new Uint8ClampedArray(buffer, start * stride, slice * stride);
+            const chunkConfig = {
+                width: this._width,
+                height: this._height,
+                start,
+                end: start + slice
+            };
+            promises.push(this._scheduler.apply([config, chunkConfig]));
+        }
+        return Promise.all(promises).then((results) => {
+            for (const { data, chunkConfig } of results) {
+                // Cannot pass SharedArrayBuffer views to ImageData
+                const buffer_view = new Uint8ClampedArray(data.buffer);
                 const array_buffer = new ArrayBuffer(buffer_view.byteLength);
                 const array_buffer_view = new Uint8ClampedArray(array_buffer);
                 array_buffer_view.set(buffer_view);
-                context.putImageData(new ImageData(array_buffer_view, width, slice), 0, start);
-                if (++done === threadCount) {
-                    resolve();
-                }
-                thread.removeEventListener('message', onMessage);
-            };
-            thread.addEventListener('message', onMessage);
+                this._context.putImageData(new ImageData(array_buffer_view, this._width, slice), 0, chunkConfig.start);
+            }
+        });
+    }
 
-            thread.postMessage(<IThreadConfig> {
-                width,
-                height,
-                buffer,
-                start,
-                end,
-                config
-            });
-        }
-    });
-};
+    private renderChunk(config: IConfig, chunkConfig: IChunkConfig) {
+        const Color = (<any> self).Color;
+        const NumberRange = (<any> self).NumberRange;
 
-const getConfig = (): IConfig => {
-    return Object.entries({
-        density: 'integer',
-        colors: 'integer',
-        iterations: 'integer',
-        red: 'float',
-        green: 'float',
-        blue: 'float'
-    }).reduce((config: any, [key, type]) => {
-        const rawValue = (<HTMLInputElement> document.getElementById(key)).value;
-        config[key] = type === 'integer' ? parseInt(rawValue, 10) : parseFloat(rawValue);
-        return config;
-    }, {});
-};
+        const log2 = Math.log(2);
 
-document.addEventListener('DOMContentLoaded', () => {
-    const canvas = <HTMLCanvasElement> document.getElementById('fractal');
-    const renderButton = <HTMLButtonElement> document.getElementById('render');
-    renderButton.addEventListener('click', (event: Event) => {
-        event.preventDefault();
-        const config = getConfig();
-        const start = Date.now();
-        if (typeof SharedArrayBuffer === 'undefined') {
-            render(canvas, config).then(() => {
-                const duration = Date.now() - start;
-                // tslint:disable:no-console
-                console.log('Rendering took ' + duration + 'ms.');
-                // tslint:enable:no-console
-            });
+        const stride = chunkConfig.width;
+        const rows = chunkConfig.end - chunkConfig.start;
+        let data: Uint32Array;
+        if (chunkConfig.buffer) {
+            data = new Uint32Array(chunkConfig.buffer, chunkConfig.start * stride, rows * stride);
         } else {
-            renderShared(canvas, config).then(() => {
-                const duration = Date.now() - start;
-                // tslint:disable:no-console
-                console.log('SAB Rendering took ' + duration + 'ms.');
-                // tslint:enable:no-console
-            });
+            data = new Uint32Array(rows * stride);
         }
-    });
-});
+
+        const colors = [];
+        for (let i = 0; i <= config.iterations; ++i) {
+            const percentage = i / config.iterations;
+            colors.push(new Color(
+                Math.min(255, Math.floor(255 * percentage * config.red)),
+                Math.min(255, Math.floor(255 * percentage * config.green)),
+                Math.min(255, Math.floor(255 * percentage * config.blue))
+            ));
+        }
+
+        const widthRange = new NumberRange(0, chunkConfig.width);
+        const heightRange = new NumberRange(0, chunkConfig.height);
+        const realRange = new NumberRange(-2.5, 1.0);
+        const imaginaryRange = new NumberRange(-1.0, 1.0);
+
+        let index = 0;
+        for (let y = chunkConfig.start; y < chunkConfig.end; ++y) {
+            for (let x = 0; x < chunkConfig.width; ++x) {
+                const i0 = NumberRange.Scale(widthRange, x, realRange);
+                const j0 = NumberRange.Scale(heightRange, y, imaginaryRange);
+
+                const jj0 = j0 * j0;
+                let q = (i0 - 0.25);
+                q *= q;
+                q += jj0;
+
+                if (q * (q + (i0 - 0.25)) < 0.25 * jj0) {
+                    data[index++] = Color.Black.value();
+                } else {
+                    let iterations = 0;
+                    let ii = 0;
+                    let jj = 0;
+                    for (let i = 0, j = 0; ii + jj < Math.pow(2, 16) && iterations < config.iterations; ii = i * i, jj = j * j, ++iterations) {
+                        const itemp = ii - jj + i0;
+                        const jtemp = 2 * i * j + j0;
+                        if (i === itemp && j === jtemp) {
+                            iterations = config.iterations;
+                            break;
+                        }
+                        i = itemp;
+                        j = jtemp;
+                    }
+                    if (iterations < config.iterations) {
+                        iterations += 1 - Math.log(Math.log(ii + jj) / 2 / log2) / log2;
+                        const color1 = colors[Math.floor(iterations)];
+                        const color2 = colors[Math.floor(iterations) + 1];
+                        data[index++] = Color.Lerp(color1, color2, iterations % 1).value();
+                    } else {
+                        data[index++] = Color.Black.value();
+                    }
+                }
+            }
+        }
+
+        return { data, chunkConfig };
+    }
+
+}

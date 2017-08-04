@@ -1,0 +1,12 @@
+{
+    "all": true,
+    "include": [
+        "build/src/ts/**/*.js"
+    ],
+    "reporter": [
+        "html",
+        "text-summary"
+    ],
+    "reportDir": "build/coverage/ts",
+    "instrument": false
+}

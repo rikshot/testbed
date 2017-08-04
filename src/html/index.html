@@ -3,28 +3,26 @@
     <head>
         <title>Mandelbrot</title>
         <meta charset="utf-8" />
-        <link type="text/css" rel="stylesheet" href="css/main.css" media="screen"/>
+        <link type="text/css" rel="stylesheet" href="/build/src/css/main.css" media="screen" />
+        <script src="/node_modules/systemjs/dist/system.js"></script>
     </head>
     <body>
         <canvas id="fractal"></canvas>
         <div id="controls">
             <label for="iterations">Iterations: </label>
-            <input id="iterations" name="iterations" type="text" value="1000" size="5" maxlength="5"/>
-            <label for="colors">Colors: </label>
-            <input id="colors" name="colors" type="text" value="10000" size="5" maxlength="5"/>
-            <label for="density">Density: </label>
-            <input id="density" name="density" type="text" value="20" size="5" maxlength="5"/>
-            <br/>
+            <input id="iterations" name="iterations" type="text" value="1000" size="5" maxlength="10"/>
             <label for="red">Red: </label>
             <input id="red" name="red" type="text" value="10" size="5" maxlength="5"/>
-            <label for="Green">Green: </label>
+            <label for="green">Green: </label>
             <input id="green" name="green" type="text" value="15" size="5" maxlength="5"/>
             <label for="blue">Blue: </label>
             <input id="blue" name="blue" type="text" value="0.5" size="5" maxlength="5"/>
-            <br/>
             <input id="render" name="render" type="button" value="Render"/>
         </div>
-        <script src="ts/Fractal/Mandelbrot.js"></script>
-        <script src="ts/Fractal/Workers/Scheduler.js"></script>
+        <script>
+            System.import('/system.config.js').then(() => {
+                System.import('Fractal/Main');
+            });
+        </script>
     </body>
 </html>
