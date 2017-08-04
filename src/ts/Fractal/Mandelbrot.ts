@@ -20,16 +20,27 @@ interface IChunkConfig {
 export class Mandelbrot {
 
     private readonly _canvas: HTMLCanvasElement;
-    private readonly _width: number;
-    private readonly _height: number;
     private readonly _context: CanvasRenderingContext2D;
 
-    private readonly _scheduler: Scheduler<{ data: Uint32Array, chunkConfig: IChunkConfig }>;
+    private readonly _width: number;
+    private readonly _height: number;
+    private readonly _slice: number;
+    private readonly _stride: number;
+
+    private readonly _buffer?: SharedArrayBuffer;
+
+    private readonly _scheduler: Scheduler<{ data?: Uint32Array, start: number }>;
 
     constructor(canvas: HTMLCanvasElement) {
         this._canvas = canvas;
         this._width = this._canvas.width = 1920;
         this._height = this._canvas.height = 1080;
+        this._slice = Math.floor(this._height / navigator.hardwareConcurrency);
+        this._stride = this._width * 4;
+
+        if (typeof SharedArrayBuffer !== 'undefined') {
+            this._buffer = new SharedArrayBuffer(this._height * this._stride);
+        }
 
         const context = this._canvas.getContext('2d');
         if (!context) {
@@ -44,56 +55,52 @@ export class Mandelbrot {
     }
 
     public render(config: IConfig) {
-        if (typeof SharedArrayBuffer === 'undefined') {
+        if (!this._buffer) {
             return this.renderTransfered(config);
         }
         return this.renderShared(config);
     }
 
     private renderTransfered(config: IConfig) {
-        const slice = Math.floor(this._height / navigator.hardwareConcurrency);
         const promises = [];
         for (let i = 0; i < navigator.hardwareConcurrency; ++i) {
-            const start = i * slice;
+            const start = i * this._slice;
             const chunkConfig = {
                 width: this._width,
                 height: this._height,
                 start,
-                end: start + slice
+                end: start + this._slice
             };
             promises.push(this._scheduler.apply([config, chunkConfig]));
         }
         return Promise.all(promises).then((results) => {
-            for (const { data, chunkConfig } of results) {
-                this._context.putImageData(new ImageData(new Uint8ClampedArray(data.buffer), this._width, slice), 0, chunkConfig.start);
+            for (const { data, start } of results) {
+                this._context.putImageData(new ImageData(new Uint8ClampedArray(data.buffer), this._width, this._slice), 0, start);
             }
         });
     }
 
     private renderShared(config: IConfig) {
-        const slice = Math.floor(this._height / navigator.hardwareConcurrency);
-        const stride = this._width * 4;
-        const buffer = new SharedArrayBuffer(this._height * stride);
-
         const promises = [];
         for (let i = 0; i < navigator.hardwareConcurrency; ++i) {
-            const start = i * slice;
+            const start = i * this._slice;
             const chunkConfig = {
                 width: this._width,
                 height: this._height,
                 start,
-                end: start + slice
+                end: start + this._slice,
+                buffer: this._buffer
             };
             promises.push(this._scheduler.apply([config, chunkConfig]));
         }
         return Promise.all(promises).then((results) => {
-            for (const { data, chunkConfig } of results) {
+            for (const { start } of results) {
                 // Cannot pass SharedArrayBuffer views to ImageData
-                const buffer_view = new Uint8ClampedArray(data.buffer);
+                const buffer_view = new Uint8ClampedArray(<SharedArrayBuffer> this._buffer, start * this._stride, this._slice * this._stride);
                 const array_buffer = new ArrayBuffer(buffer_view.byteLength);
                 const array_buffer_view = new Uint8ClampedArray(array_buffer);
                 array_buffer_view.set(buffer_view);
-                this._context.putImageData(new ImageData(array_buffer_view, this._width, slice), 0, chunkConfig.start);
+                this._context.putImageData(new ImageData(array_buffer_view, this._width, this._slice), 0, start);
             }
         });
     }
@@ -108,7 +115,7 @@ export class Mandelbrot {
         const rows = chunkConfig.end - chunkConfig.start;
         let data: Uint32Array;
         if (chunkConfig.buffer) {
-            data = new Uint32Array(chunkConfig.buffer, chunkConfig.start * stride, rows * stride);
+            data = new Uint32Array(chunkConfig.buffer, chunkConfig.start * stride * 4, rows * stride);
         } else {
             data = new Uint32Array(rows * stride);
         }
@@ -167,7 +174,11 @@ export class Mandelbrot {
             }
         }
 
-        return { data, chunkConfig };
+        if (chunkConfig.buffer) {
+            return { start: chunkConfig.start };
+        } else {
+            return { data, start: chunkConfig.start };
+        }
     }
 
 }

@@ -62,7 +62,7 @@ export class Scheduler<R, T extends (...parameters: any[]) => R | Promise<R> = 
             importScripts('http://localhost:8000/node_modules/systemjs/dist/system.js', 'http://localhost:8000/system.config.js');
             Promise.all(${ JSON.stringify(Object.keys(this._moduleMap ? this._moduleMap : {})) }.map((requirement) => System.import(requirement))).then(imports => { (self => {
                 self.onmessage = (event) => {
-                    const [taskId, parameters, moduleMap, transferables] = event.data;
+                    const [taskId, parameters, moduleMap] = event.data;
                     for(const module in moduleMap) {
                         if(moduleMap.hasOwnProperty(module)) {
                             for(const exported of moduleMap[module]) {
@@ -77,14 +77,18 @@ export class Scheduler<R, T extends (...parameters: any[]) => R | Promise<R> = 
                     try {
                         const returnValue = (${ task_source }).apply(self, parameters);
                         if(returnValue instanceof Promise) {
-                            returnValue.then((result) => self.postMessage({taskId, result}, transferables)).catch((error) => self.postMessage({taskId, error}));
+                            returnValue.then((result) => self.postMessage({taskId, result})).catch((error) => {
+                                console.error(error);
+                                self.postMessage({taskId, error: JSON.stringify(error)})
+                            });
                         } else {
-                            self.postMessage({taskId, result: returnValue}, transferables);
+                            self.postMessage({taskId, result: returnValue});
                         }
                     } catch(error) {
+                        console.error(error);
                         self.postMessage({
                             taskId,
-                            error
+                            error: JSON.stringify(error)
                         });
                     }
                 };
