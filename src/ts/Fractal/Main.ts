@@ -23,9 +23,19 @@ const mandelbrot = new Mandelbrot(canvas);
 
 let start = new Point();
 let end = new Point();
+let rectangle = new Rectangle(new Point(-2.5, -1.0), new Point(1.0, 1.0));
 
-const realRange = new NumberRange(-2.5, 1.0);
-const imaginaryRange = new NumberRange(-1.0, 1.0);
+let realRange = new NumberRange(-2.5, 1.0);
+let imaginaryRange = new NumberRange(-1.0, 1.0);
+
+const render = (rectangle: Rectangle) => {
+    const config = getConfig(rectangle);
+    const startTime = Date.now();
+    mandelbrot.render(config).then(() => {
+        const duration = Date.now() - startTime;
+        console.log('Rendering took ' + duration + 'ms.');
+    });
+};
 
 canvas.addEventListener('mousedown', (event) => {
     const elementWidthRange = new NumberRange(0, canvas.clientWidth);
@@ -36,7 +46,7 @@ canvas.addEventListener('mousedown', (event) => {
 
     start = new Point(
         NumberRange.Scale(canvasWidthRange, NumberRange.Scale(elementWidthRange, event.clientX, canvasWidthRange), realRange),
-        NumberRange.Scale(canvasHeightRange, NumberRange.Scale(elementHeightRange, canvas.clientHeight - event.clientY, canvasHeightRange), imaginaryRange)
+        NumberRange.Scale(canvasHeightRange, NumberRange.Scale(elementHeightRange, event.clientY, canvasHeightRange), imaginaryRange)
     );
 });
 
@@ -49,19 +59,30 @@ canvas.addEventListener('mouseup', (event) => {
 
     end = new Point(
         NumberRange.Scale(canvasWidthRange, NumberRange.Scale(elementWidthRange, event.clientX, canvasWidthRange), realRange),
-        NumberRange.Scale(canvasHeightRange, NumberRange.Scale(elementHeightRange, canvas.clientHeight - event.clientY, canvasHeightRange), imaginaryRange)
+        NumberRange.Scale(canvasHeightRange, NumberRange.Scale(elementHeightRange, event.clientY, canvasHeightRange), imaginaryRange)
     );
 
-    const rectangle = new Rectangle(start, end);
+    rectangle = new Rectangle(start, end);
+
+    render(rectangle);
+
+    realRange = new NumberRange(rectangle.start().x(), rectangle.end().x());
+    imaginaryRange = new NumberRange(rectangle.start().y(), rectangle.end().y());
 });
 
 const renderButton = <HTMLButtonElement> document.getElementById('render');
 renderButton.addEventListener('click', (event: Event) => {
     event.preventDefault();
-    const config = getConfig(new Rectangle(new Point(-2.5, -1.0), new Point(1.0, 1.0)));
-    const start = Date.now();
-    mandelbrot.render(config).then(() => {
-        const duration = Date.now() - start;
-        console.log('Rendering took ' + duration + 'ms.');
-    });
+    render(rectangle);
+});
+
+const resetButton = <HTMLButtonElement> document.getElementById('reset');
+resetButton.addEventListener('click', (event: Event) => {
+    event.preventDefault();
+
+    realRange = new NumberRange(-2.5, 1.0);
+    imaginaryRange = new NumberRange(-1.0, 1.0);
+    rectangle = new Rectangle(new Point(-2.5, -1.0), new Point(1.0, 1.0));
+
+    render(rectangle);
 });

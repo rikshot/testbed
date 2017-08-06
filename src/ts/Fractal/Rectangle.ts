@@ -15,11 +15,11 @@ export class Rectangle {
     private readonly _width: number;
     private readonly _height: number;
 
-    constructor(start: Point, end: Point) {
+    constructor(start: Point = new Point(), end: Point = new Point()) {
         this._start = start;
         this._end = end;
-        this._width = end.x() - start.x();
-        this._height = end.y() - start.y();
+        this._width = Math.abs(end.x() - start.x());
+        this._height = Math.abs(end.y() - start.y());
     }
 
     public start() {

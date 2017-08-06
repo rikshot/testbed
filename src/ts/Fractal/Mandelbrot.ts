@@ -34,9 +34,6 @@ export class Mandelbrot {
     private readonly _widthRange: NumberRange;
     private readonly _heightRange: NumberRange;
 
-    private readonly _realRange: NumberRange;
-    private readonly _imaginaryRange: NumberRange;
-
     private readonly _buffer?: SharedArrayBuffer;
 
     private readonly _scheduler: Scheduler;
@@ -48,9 +45,6 @@ export class Mandelbrot {
 
         this._widthRange = new NumberRange(0, this._width);
         this._heightRange = new NumberRange(0, this._height);
-
-        this._realRange = new NumberRange(-2.5, 1.0);
-        this._imaginaryRange = new NumberRange(-1.0, 1.0);
 
         if (typeof SharedArrayBuffer !== 'undefined') {
             this._buffer = new SharedArrayBuffer(this._width * this._height * 4);
@@ -68,7 +62,7 @@ export class Mandelbrot {
         });
     }
 
-    public render(config: IConfig) {
+    public render(config: IConfig): Promise<any> {
         if (!this._buffer) {
             return this.renderTransfered(config);
         }
@@ -76,7 +70,7 @@ export class Mandelbrot {
     }
 
     private renderTransfered(config: IConfig) {
-        return Promise.all(this.createChunks().map((chunk) => this._scheduler.apply([config, chunk]).then(({ data, chunkConfig }: { data: Uint32Array, chunkConfig: IChunkConfig }) => {
+        return Promise.all(this.createChunks(config.rectangle).map((chunk) => this._scheduler.apply([config, chunk]).then(({ data, chunkConfig }: { data: Uint32Array, chunkConfig: IChunkConfig }) => {
             this._context.putImageData(
                 new ImageData(new Uint8ClampedArray(data.buffer), chunkConfig.image.width, chunkConfig.image.height),
                 chunkConfig.image.start.x,
@@ -86,7 +80,7 @@ export class Mandelbrot {
     }
 
     private renderShared(config: IConfig) {
-        return Promise.all(this.createChunks(this._buffer).map((chunk) => this._scheduler.apply([config, chunk]))).then(() => {
+        return Promise.all(this.createChunks(config.rectangle, this._buffer).map((chunk) => this._scheduler.apply([config, chunk]))).then(() => {
             // Cannot pass SharedArrayBuffer views to ImageData
             const buffer_view = new Uint8ClampedArray(<SharedArrayBuffer> this._buffer);
             const array_buffer = new ArrayBuffer(buffer_view.byteLength);
@@ -96,7 +90,10 @@ export class Mandelbrot {
         });
     }
 
-    private createChunks(buffer?: SharedArrayBuffer) {
+    private createChunks(rectangle: Rectangle, buffer?: SharedArrayBuffer) {
+        const realRange = new NumberRange(rectangle.start().x(), rectangle.end().x());
+        const imaginaryRange = new NumberRange(rectangle.start().y(), rectangle.end().y());
+
         const chunks: IChunkConfig[] = [];
         for (let x = 0; x < this._width; x += this._chunkSize) {
             const chunkWidth = x + this._chunkSize > this._width ? this._width - x : this._chunkSize;
@@ -110,12 +107,12 @@ export class Mandelbrot {
                     image: new Rectangle(screenStart, screenEnd).getDTO(),
                     complex: new Rectangle(
                         new Point(
-                            NumberRange.Scale(this._widthRange, x, this._realRange),
-                            NumberRange.Scale(this._heightRange, y, this._imaginaryRange)
+                            NumberRange.Scale(this._widthRange, x, realRange),
+                            NumberRange.Scale(this._heightRange, y, imaginaryRange)
                         ),
                         new Point(
-                            NumberRange.Scale(this._widthRange, x + chunkWidth, this._realRange),
-                            NumberRange.Scale(this._heightRange, y + chunkHeight, this._imaginaryRange)
+                            NumberRange.Scale(this._widthRange, x + chunkWidth, realRange),
+                            NumberRange.Scale(this._heightRange, y + chunkHeight, imaginaryRange)
                         )
                     ).getDTO(),
                     buffer
