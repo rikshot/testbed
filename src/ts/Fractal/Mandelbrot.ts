@@ -40,8 +40,8 @@ export class Mandelbrot {
 
     constructor(canvas: HTMLCanvasElement) {
         this._canvas = canvas;
-        this._width = this._canvas.width = 1920;
-        this._height = this._canvas.height = 1080;
+        this._width = this._canvas.width;
+        this._height = this._canvas.height;
 
         this._widthRange = new NumberRange(0, this._width);
         this._heightRange = new NumberRange(0, this._height);

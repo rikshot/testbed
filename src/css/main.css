@@ -1,4 +1,4 @@
-html, body, #fractal {
+html, body, canvas {
 	margin: 0;
 	padding: 0;
 	position: absolute;
@@ -7,6 +7,10 @@ html, body, #fractal {
 	width: 100%;
 	height: 100%;
     background: #000;
+}
+
+#selection {
+	background: transparent;
 }
 
 * {
