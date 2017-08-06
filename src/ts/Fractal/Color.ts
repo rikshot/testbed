@@ -13,30 +13,40 @@ export class Color {
         );
     }
 
-    private readonly _color: number;
+    private readonly _red: number;
+    private readonly _green: number;
+    private readonly _blue: number;
+    private readonly _alpha: number;
+
+    private readonly _abgr: number;
 
     constructor(red: number, green: number, blue: number, alpha?: number) {
-        this._color = ((alpha ? alpha : 0xFF) << 24) ^ (blue << 16) ^ (green << 8) ^ red;
+        this._red = red & 0xFF;
+        this._green = green & 0xFF;
+        this._blue = blue & 0xFF;
+        this._alpha = alpha ? alpha & 0xFF : 0xFF;
+
+        this._abgr = (this._alpha << 24) ^ (this._blue << 16) ^ (this._green << 8) ^ this._red;
     }
 
     public red() {
-        return this._color & 0xFF;
+        return this._red;
     }
 
     public green() {
-        return (this._color >> 8) & 0xFF;
+        return this._green;
     }
 
     public blue() {
-        return (this._color >> 16) & 0xFF;
+        return this._blue;
     }
 
     public alpha() {
-        return (this._color >> 24) & 0xFF;
+        return this._alpha;
     }
 
-    public value() {
-        return this._color;
+    public abgr() {
+        return this._abgr;
     }
 
 }

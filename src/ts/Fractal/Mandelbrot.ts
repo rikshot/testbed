@@ -1,45 +1,59 @@
+import { IConfig } from 'Fractal/Mandelbrot';
+import { Rectangle, IRectangle } from 'Fractal/Rectangle';
 import { NumberRange } from 'Fractal/NumberRange';
 import { Color } from 'Fractal/Color';
 import { Scheduler } from 'Fractal/Scheduler';
+import { Point } from 'Fractal/Point';
 
 export interface IConfig {
     iterations: number;
     red: number;
     green: number;
     blue: number;
+    rectangle: Rectangle;
 }
 
 interface IChunkConfig {
     width: number;
     height: number;
-    start: number;
-    end: number;
-    buffer?: ArrayBuffer;
+    image: IRectangle;
+    complex: IRectangle;
+    buffer?: SharedArrayBuffer;
 }
 
 export class Mandelbrot {
+
+    private readonly _chunkSize = 256;
 
     private readonly _canvas: HTMLCanvasElement;
     private readonly _context: CanvasRenderingContext2D;
 
     private readonly _width: number;
     private readonly _height: number;
-    private readonly _slice: number;
-    private readonly _stride: number;
+
+    private readonly _widthRange: NumberRange;
+    private readonly _heightRange: NumberRange;
+
+    private readonly _realRange: NumberRange;
+    private readonly _imaginaryRange: NumberRange;
 
     private readonly _buffer?: SharedArrayBuffer;
 
-    private readonly _scheduler: Scheduler<{ data?: Uint32Array, start: number }>;
+    private readonly _scheduler: Scheduler;
 
     constructor(canvas: HTMLCanvasElement) {
         this._canvas = canvas;
         this._width = this._canvas.width = 1920;
         this._height = this._canvas.height = 1080;
-        this._slice = Math.floor(this._height / navigator.hardwareConcurrency);
-        this._stride = this._width * 4;
+
+        this._widthRange = new NumberRange(0, this._width);
+        this._heightRange = new NumberRange(0, this._height);
+
+        this._realRange = new NumberRange(-2.5, 1.0);
+        this._imaginaryRange = new NumberRange(-1.0, 1.0);
 
         if (typeof SharedArrayBuffer !== 'undefined') {
-            this._buffer = new SharedArrayBuffer(this._height * this._stride);
+            this._buffer = new SharedArrayBuffer(this._width * this._height * 4);
         }
 
         const context = this._canvas.getContext('2d');
@@ -62,47 +76,53 @@ export class Mandelbrot {
     }
 
     private renderTransfered(config: IConfig) {
-        const promises = [];
-        for (let i = 0; i < navigator.hardwareConcurrency; ++i) {
-            const start = i * this._slice;
-            const chunkConfig = {
-                width: this._width,
-                height: this._height,
-                start,
-                end: start + this._slice
-            };
-            promises.push(this._scheduler.apply([config, chunkConfig]));
-        }
-        return Promise.all(promises).then((results) => {
-            for (const { data, start } of results) {
-                this._context.putImageData(new ImageData(new Uint8ClampedArray(data.buffer), this._width, this._slice), 0, start);
-            }
-        });
+        return Promise.all(this.createChunks().map((chunk) => this._scheduler.apply([config, chunk]).then(({ data, chunkConfig }: { data: Uint32Array, chunkConfig: IChunkConfig }) => {
+            this._context.putImageData(
+                new ImageData(new Uint8ClampedArray(data.buffer), chunkConfig.image.width, chunkConfig.image.height),
+                chunkConfig.image.start.x,
+                chunkConfig.image.start.y
+            );
+        })));
     }
 
     private renderShared(config: IConfig) {
-        const promises = [];
-        for (let i = 0; i < navigator.hardwareConcurrency; ++i) {
-            const start = i * this._slice;
-            const chunkConfig = {
-                width: this._width,
-                height: this._height,
-                start,
-                end: start + this._slice,
-                buffer: this._buffer
-            };
-            promises.push(this._scheduler.apply([config, chunkConfig]));
-        }
-        return Promise.all(promises).then((results) => {
-            for (const { start } of results) {
-                // Cannot pass SharedArrayBuffer views to ImageData
-                const buffer_view = new Uint8ClampedArray(<SharedArrayBuffer> this._buffer, start * this._stride, this._slice * this._stride);
-                const array_buffer = new ArrayBuffer(buffer_view.byteLength);
-                const array_buffer_view = new Uint8ClampedArray(array_buffer);
-                array_buffer_view.set(buffer_view);
-                this._context.putImageData(new ImageData(array_buffer_view, this._width, this._slice), 0, start);
-            }
+        return Promise.all(this.createChunks(this._buffer).map((chunk) => this._scheduler.apply([config, chunk]))).then(() => {
+            // Cannot pass SharedArrayBuffer views to ImageData
+            const buffer_view = new Uint8ClampedArray(<SharedArrayBuffer> this._buffer);
+            const array_buffer = new ArrayBuffer(buffer_view.byteLength);
+            const array_buffer_view = new Uint8ClampedArray(array_buffer);
+            array_buffer_view.set(buffer_view);
+            this._context.putImageData(new ImageData(array_buffer_view, this._width, this._height), 0, 0);
         });
+    }
+
+    private createChunks(buffer?: SharedArrayBuffer) {
+        const chunks: IChunkConfig[] = [];
+        for (let x = 0; x < this._width; x += this._chunkSize) {
+            const chunkWidth = x + this._chunkSize > this._width ? this._width - x : this._chunkSize;
+            for (let y = 0; y < this._height; y += this._chunkSize) {
+                const chunkHeight = y + this._chunkSize > this._height ? this._height - y : this._chunkSize;
+                const screenStart = new Point(x, y);
+                const screenEnd = new Point(x + chunkWidth, y + chunkHeight);
+                chunks.push({
+                    width: this._width,
+                    height: this._height,
+                    image: new Rectangle(screenStart, screenEnd).getDTO(),
+                    complex: new Rectangle(
+                        new Point(
+                            NumberRange.Scale(this._widthRange, x, this._realRange),
+                            NumberRange.Scale(this._heightRange, y, this._imaginaryRange)
+                        ),
+                        new Point(
+                            NumberRange.Scale(this._widthRange, x + chunkWidth, this._realRange),
+                            NumberRange.Scale(this._heightRange, y + chunkHeight, this._imaginaryRange)
+                        )
+                    ).getDTO(),
+                    buffer
+                });
+            }
+        }
+        return chunks;
     }
 
     private renderChunk(config: IConfig, chunkConfig: IChunkConfig) {
@@ -111,13 +131,11 @@ export class Mandelbrot {
 
         const log2 = Math.log(2);
 
-        const stride = chunkConfig.width;
-        const rows = chunkConfig.end - chunkConfig.start;
         let data: Uint32Array;
         if (chunkConfig.buffer) {
-            data = new Uint32Array(chunkConfig.buffer, chunkConfig.start * stride * 4, rows * stride);
+            data = new Uint32Array(chunkConfig.buffer);
         } else {
-            data = new Uint32Array(rows * stride);
+            data = new Uint32Array(chunkConfig.image.width * chunkConfig.image.height);
         }
 
         const colors = [];
@@ -130,14 +148,14 @@ export class Mandelbrot {
             ));
         }
 
-        const widthRange = new NumberRange(0, chunkConfig.width);
-        const heightRange = new NumberRange(0, chunkConfig.height);
-        const realRange = new NumberRange(-2.5, 1.0);
-        const imaginaryRange = new NumberRange(-1.0, 1.0);
+        const widthRange = new NumberRange(chunkConfig.image.start.x, chunkConfig.image.end.x);
+        const heightRange = new NumberRange(chunkConfig.image.start.y, chunkConfig.image.end.y);
+        const realRange = new NumberRange(chunkConfig.complex.start.x, chunkConfig.complex.end.x);
+        const imaginaryRange = new NumberRange(chunkConfig.complex.start.y, chunkConfig.complex.end.y);
 
-        let index = 0;
-        for (let y = chunkConfig.start; y < chunkConfig.end; ++y) {
-            for (let x = 0; x < chunkConfig.width; ++x) {
+        let index = chunkConfig.buffer ? chunkConfig.image.start.y * chunkConfig.width + chunkConfig.image.start.x : 0;
+        for (let y = chunkConfig.image.start.y; y < chunkConfig.image.end.y; ++y) {
+            for (let x = chunkConfig.image.start.x; x < chunkConfig.image.end.x; ++x, ++index) {
                 const i0 = NumberRange.Scale(widthRange, x, realRange);
                 const j0 = NumberRange.Scale(heightRange, y, imaginaryRange);
 
@@ -146,9 +164,8 @@ export class Mandelbrot {
                 q *= q;
                 q += jj0;
 
-                if (q * (q + (i0 - 0.25)) < 0.25 * jj0) {
-                    data[index++] = Color.Black.value();
-                } else {
+                let color = Color.Black;
+                if (q * (q + (i0 - 0.25)) >= 0.25 * jj0) {
                     let iterations = 0;
                     let ii = 0;
                     let jj = 0;
@@ -166,19 +183,20 @@ export class Mandelbrot {
                         iterations += 1 - Math.log(Math.log(ii + jj) / 2 / log2) / log2;
                         const color1 = colors[Math.floor(iterations)];
                         const color2 = colors[Math.floor(iterations) + 1];
-                        data[index++] = Color.Lerp(color1, color2, iterations % 1).value();
-                    } else {
-                        data[index++] = Color.Black.value();
+                        color = Color.Lerp(color1, color2, iterations % 1);
                     }
                 }
+                data[index] = color.abgr();
+            }
+            if (chunkConfig.buffer) {
+                index += chunkConfig.width - chunkConfig.image.width;
             }
         }
 
-        if (chunkConfig.buffer) {
-            return { start: chunkConfig.start };
-        } else {
-            return { data, start: chunkConfig.start };
+        if (!chunkConfig.buffer) {
+            return [{ data, chunkConfig }, [data.buffer]];
         }
+        return [{ chunkConfig }, []];
     }
 
 }

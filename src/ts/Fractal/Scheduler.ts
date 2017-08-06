@@ -24,7 +24,7 @@ export interface IQueuedTask {
     transferables: any[];
 }
 
-export class Scheduler<R, T extends (...parameters: any[]) => R | Promise<R> = (...parameters: any[]) => R> {
+export class Scheduler {
 
     private readonly _moduleMap?: IModuleMap;
 
@@ -36,7 +36,7 @@ export class Scheduler<R, T extends (...parameters: any[]) => R | Promise<R> = 
 
     private _queue: IQueuedTask[] = [];
 
-    constructor(task: T, moduleMap?: IModuleMap) {
+    constructor(task: Function, moduleMap?: IModuleMap) {
         this._moduleMap = moduleMap;
 
         const task_source = URL.createObjectURL(new Blob([this.getRunner(task)], {
@@ -55,7 +55,7 @@ export class Scheduler<R, T extends (...parameters: any[]) => R | Promise<R> = 
         return this.schedule(parameters, transferables);
     }
 
-    private getRunner(task: T) {
+    private getRunner(task: Function) {
         let task_source = task.toString();
         task_source = task_source.substr(task_source.indexOf('(')).replace(/\{/, '=> {');
         return `
@@ -76,13 +76,12 @@ export class Scheduler<R, T extends (...parameters: any[]) => R | Promise<R> = 
                     }
                     try {
                         const returnValue = (${ task_source }).apply(self, parameters);
-                        if(returnValue instanceof Promise) {
-                            returnValue.then((result) => self.postMessage({taskId, result})).catch((error) => {
-                                console.error(error);
-                                self.postMessage({taskId, error: JSON.stringify(error)})
-                            });
+                        if(returnValue) {
+                            const result = returnValue[0];
+                            const transferables = returnValue[1];
+                            self.postMessage({taskId, result}, transferables);
                         } else {
-                            self.postMessage({taskId, result: returnValue});
+                            self.postMessage({taskId});
                         }
                     } catch(error) {
                         console.error(error);
@@ -96,7 +95,7 @@ export class Scheduler<R, T extends (...parameters: any[]) => R | Promise<R> = 
         `;
     }
 
-    private schedule(parameters?: any[], transferables?: any[]): Promise<T> {
+    private schedule(parameters?: any[], transferables?: any[]): Promise<any> {
         const taskId = this._taskId++;
         return new Promise((resolve, reject) => {
             const task = this._tasks[taskId] = new CallbackContainer(resolve, reject);
