@@ -32,6 +32,7 @@ test-coverage: $(TEST_TARGETS) $(TARGETS)
 vpath %.ts $(SOURCE_DIR)/ts $(TEST_DIR)/ts
 vpath %.html $(SOURCE_DIR)/html
 vpath %.css $(SOURCE_DIR)/css
+vpath %.cpp $(SOURCE_DIR)/cpp
 
 $(SOURCE_BUILD_DIR)/ts/%.js: %.ts
 	@$(TSC) --project tsconfig.json

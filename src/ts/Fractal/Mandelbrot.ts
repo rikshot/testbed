@@ -1,25 +1,17 @@
-import { IConfig } from 'Fractal/Mandelbrot';
 import { Rectangle, IRectangle } from 'Fractal/Rectangle';
 import { NumberRange } from 'Fractal/NumberRange';
 import { Color } from 'Fractal/Color';
 import { Scheduler } from 'Fractal/Scheduler';
 import { Point } from 'Fractal/Point';
+import { Config, IConfig } from 'Fractal/Config';
+import { ChunkConfig, IChunkConfig } from 'Fractal/ChunkConfig';
 
-export interface IConfig {
-    iterations: number;
-    red: number;
-    green: number;
-    blue: number;
-    rectangle: Rectangle;
+interface IModuleWindow extends Window {
+    Module: any;
 }
 
-interface IChunkConfig {
-    width: number;
-    height: number;
-    image: IRectangle;
-    complex: IRectangle;
-    buffer?: SharedArrayBuffer;
-}
+declare var WebAssembly: any;
+declare var Module: any;
 
 export class Mandelbrot {
 
@@ -56,21 +48,21 @@ export class Mandelbrot {
         }
         this._context = context;
 
-        this._scheduler = new Scheduler(this.renderChunk, {
+        this._scheduler = new Scheduler(typeof WebAssembly !== 'undefined' ? this.renderChunkNative : this.renderChunk, {
             'Fractal/Color': ['Color'],
             'Fractal/NumberRange': ['NumberRange']
         });
     }
 
-    public render(config: IConfig): Promise<any> {
+    public render(config: Config): Promise<any> {
         if (!this._buffer) {
             return this.renderTransfered(config);
         }
         return this.renderShared(config);
     }
 
-    private renderTransfered(config: IConfig) {
-        return Promise.all(this.createChunks(config.rectangle).map((chunk) => this._scheduler.apply([config, chunk]).then(({ data, chunkConfig }: { data: Uint32Array, chunkConfig: IChunkConfig }) => {
+    private renderTransfered(config: Config) {
+        return Promise.all(this.createChunks(config.rectangle).map((chunk) => this._scheduler.apply([config.getDTO(), chunk.getDTO()]).then(({ data, chunkConfig }: { data: Uint32Array, chunkConfig: IChunkConfig }) => {
             this._context.putImageData(
                 new ImageData(new Uint8ClampedArray(data.buffer), chunkConfig.image.width, chunkConfig.image.height),
                 chunkConfig.image.start.x,
@@ -79,8 +71,8 @@ export class Mandelbrot {
         })));
     }
 
-    private renderShared(config: IConfig) {
-        return Promise.all(this.createChunks(config.rectangle, this._buffer).map((chunk) => this._scheduler.apply([config, chunk]))).then(() => {
+    private renderShared(config: Config) {
+        return Promise.all(this.createChunks(config.rectangle, this._buffer).map((chunk) => this._scheduler.apply([config.getDTO(), chunk.getDTO()]))).then(() => {
             // Cannot pass SharedArrayBuffer views to ImageData
             const buffer_view = new Uint8ClampedArray(<SharedArrayBuffer> this._buffer);
             const array_buffer = new ArrayBuffer(buffer_view.byteLength);
@@ -91,21 +83,21 @@ export class Mandelbrot {
     }
 
     private createChunks(rectangle: Rectangle, buffer?: SharedArrayBuffer) {
-        const realRange = new NumberRange(rectangle.start().x(), rectangle.end().x());
-        const imaginaryRange = new NumberRange(rectangle.start().y(), rectangle.end().y());
+        const realRange = new NumberRange(rectangle.start.x, rectangle.end.x);
+        const imaginaryRange = new NumberRange(rectangle.start.y, rectangle.end.y);
 
-        const chunks: IChunkConfig[] = [];
+        const chunks: ChunkConfig[] = [];
         for (let x = 0; x < this._width; x += this._chunkSize) {
             const chunkWidth = x + this._chunkSize > this._width ? this._width - x : this._chunkSize;
             for (let y = 0; y < this._height; y += this._chunkSize) {
                 const chunkHeight = y + this._chunkSize > this._height ? this._height - y : this._chunkSize;
                 const screenStart = new Point(x, y);
                 const screenEnd = new Point(x + chunkWidth, y + chunkHeight);
-                chunks.push({
-                    width: this._width,
-                    height: this._height,
-                    image: new Rectangle(screenStart, screenEnd).getDTO(),
-                    complex: new Rectangle(
+                chunks.push(new ChunkConfig(
+                    this._width,
+                    this._height,
+                    new Rectangle(screenStart, screenEnd),
+                    new Rectangle(
                         new Point(
                             NumberRange.Scale(this._widthRange, x, realRange),
                             NumberRange.Scale(this._heightRange, y, imaginaryRange)
@@ -114,9 +106,9 @@ export class Mandelbrot {
                             NumberRange.Scale(this._widthRange, x + chunkWidth, realRange),
                             NumberRange.Scale(this._heightRange, y + chunkHeight, imaginaryRange)
                         )
-                    ).getDTO(),
+                    ),
                     buffer
-                });
+                ));
             }
         }
         return chunks;
@@ -194,6 +186,42 @@ export class Mandelbrot {
             return [{ data, chunkConfig }, [data.buffer]];
         }
         return [{ chunkConfig }, []];
+    }
+
+    private renderChunkNative(config: IConfig, chunkConfig: IChunkConfig) {
+        return new Promise((resolve, reject) => {
+            if (typeof Module === 'undefined') {
+                const Module = (<IModuleWindow> self).Module = {
+                    ENVIRONMENT: 'WORKER',
+                    wasmBinaryFile: 'http://localhost:8000/build/src/cpp/mandelbrot.wasm',
+                    _main: () => {
+                        resolve(Module);
+                    }
+                };
+                System.import('http://localhost:8000/build/src/cpp/mandelbrot.js');
+            } else {
+                resolve(Module);
+            }
+        }).then((Module: any) => {
+            const rawConfig = JSON.stringify(config);
+            const rawConfigLength = Module.lengthBytesUTF8(rawConfig) + 1;
+            const rawConfigOffset = Module._malloc(rawConfigLength);
+            Module.stringToUTF8(rawConfig, rawConfigOffset, rawConfigLength);
+
+            const rawChunkConfig = JSON.stringify(chunkConfig);
+            const rawChunkConfigLength = Module.lengthBytesUTF8(rawChunkConfig) + 1;
+            const rawChunkConfigOffset = Module._malloc(rawChunkConfigLength);
+            Module.stringToUTF8(rawChunkConfig, rawChunkConfigOffset, rawChunkConfigLength);
+
+            const dataOffset = Module.ccall('iterate', 'number', ['number', 'number'], [rawConfigOffset, rawChunkConfigOffset]);
+            const dataView = new Uint32Array(Module.HEAPU32.slice(dataOffset / 4, dataOffset / 4 + chunkConfig.image.width * chunkConfig.image.height));
+
+            Module._free(dataOffset);
+            Module._free(rawConfigOffset);
+            Module._free(rawChunkConfigOffset);
+
+            return [{ data: dataView, chunkConfig }, []];
+        });
     }
 
 }

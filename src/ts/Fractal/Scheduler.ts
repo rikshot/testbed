@@ -77,9 +77,23 @@ export class Scheduler {
                     try {
                         const returnValue = (${ task_source }).apply(self, parameters);
                         if(returnValue) {
-                            const result = returnValue[0];
-                            const transferables = returnValue[1];
-                            self.postMessage({taskId, result}, transferables);
+                            if(returnValue instanceof Promise) {
+                                returnValue.then(promiseReturnValue => {
+                                    const result = promiseReturnValue[0];
+                                    const transferables = promiseReturnValue[1];
+                                    self.postMessage({taskId, result}, transferables);
+                                }).catch(error => {
+                                    console.error(error);
+                                    self.postMessage({
+                                        taskId,
+                                        error: JSON.stringify(error)
+                                    });
+                                });
+                            } else {
+                                const result = returnValue[0];
+                                const transferables = returnValue[1];
+                                self.postMessage({taskId, result}, transferables);
+                            }
                         } else {
                             self.postMessage({taskId});
                         }

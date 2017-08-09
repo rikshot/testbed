@@ -9,41 +9,25 @@ export interface IRectangle {
 
 export class Rectangle {
 
-    private readonly _start: Point;
-    private readonly _end: Point;
+    public readonly start: Point;
+    public readonly end: Point;
 
-    private readonly _width: number;
-    private readonly _height: number;
+    public readonly width: number;
+    public readonly height: number;
 
     constructor(start: Point = new Point(), end: Point = new Point()) {
-        this._start = start;
-        this._end = end;
-        this._width = Math.abs(end.x() - start.x());
-        this._height = Math.abs(end.y() - start.y());
-    }
-
-    public start() {
-        return this._start;
-    }
-
-    public end() {
-        return this._end;
-    }
-
-    public width() {
-        return this._width;
-    }
-
-    public height() {
-        return this._height;
+        this.start = start;
+        this.end = end;
+        this.width = Math.abs(end.x - start.x);
+        this.height = Math.abs(end.y - start.y);
     }
 
     public getDTO(): IRectangle {
         return {
-            start: this._start.getDTO(),
-            end: this._end.getDTO(),
-            width: this._width,
-            height: this._height
+            start: this.start.getDTO(),
+            end: this.end.getDTO(),
+            width: this.width,
+            height: this.height
         };
     }
 

@@ -1,9 +1,10 @@
-import { Mandelbrot, IConfig } from 'Fractal/Mandelbrot';
+import { Mandelbrot } from 'Fractal/Mandelbrot';
 import { NumberRange } from 'Fractal/NumberRange';
 import { Point } from 'Fractal/Point';
 import { Rectangle } from 'Fractal/Rectangle';
+import { Config } from 'Fractal/Config';
 
-const getConfig = (rectangle: Rectangle): IConfig => {
+const getConfig = (rectangle: Rectangle): Config => {
     const config: any = {};
     Object.entries({
         iterations: 'integer',
@@ -15,7 +16,7 @@ const getConfig = (rectangle: Rectangle): IConfig => {
         config[key] = type === 'integer' ? parseInt(rawValue, 10) : parseFloat(rawValue);
     });
     config.rectangle = rectangle;
-    return config;
+    return new Config(config.iterations, config.red, config.green, config.blue, rectangle);
 };
 
 const selection = <HTMLCanvasElement> document.getElementById('selection');
@@ -57,8 +58,8 @@ selection.addEventListener('mousedown', (event: MouseEvent) => {
     );
 
     complexStart = new Point(
-        NumberRange.Scale(canvasWidthRange, start.x(), realRange),
-        NumberRange.Scale(canvasHeightRange, start.y(), imaginaryRange)
+        NumberRange.Scale(canvasWidthRange, start.x, realRange),
+        NumberRange.Scale(canvasHeightRange, start.y, imaginaryRange)
     );
 });
 
@@ -78,10 +79,10 @@ selection.addEventListener('mousemove', (event) => {
         selectionContext.clearRect(0, 0, selection.width, selection.height);
         selectionContext.strokeStyle = 'red';
         selectionContext.strokeRect(
-            start.x(),
-            start.y(),
-            current.x() - start.x(),
-            current.y() - start.y()
+            start.x,
+            start.y,
+            current.x - start.x,
+            current.y - start.y
         );
     }
 });
@@ -102,8 +103,8 @@ selection.addEventListener('mouseup', (event) => {
 
     render(rectangle);
 
-    realRange = new NumberRange(rectangle.start().x(), rectangle.end().x());
-    imaginaryRange = new NumberRange(rectangle.start().y(), rectangle.end().y());
+    realRange = new NumberRange(rectangle.start.x, rectangle.end.x);
+    imaginaryRange = new NumberRange(rectangle.start.y, rectangle.end.y);
 
     start = undefined;
     complexStart = undefined;
