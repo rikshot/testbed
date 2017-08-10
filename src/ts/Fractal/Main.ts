@@ -1,4 +1,4 @@
-import { Mandelbrot } from 'Fractal/Mandelbrot';
+import { RenderMode, Mandelbrot } from 'Fractal/Mandelbrot';
 import { NumberRange } from 'Fractal/NumberRange';
 import { Point } from 'Fractal/Point';
 import { Rectangle } from 'Fractal/Rectangle';
@@ -37,9 +37,12 @@ let realRange = new NumberRange(-2.5, 1.0);
 let imaginaryRange = new NumberRange(-1.0, 1.0);
 
 const render = (rectangle: Rectangle) => {
+    const modeElement = <HTMLSelectElement> document.getElementById('mode');
+    const modeString = modeElement.options[modeElement.selectedIndex].value;
+
     const config = getConfig(rectangle);
     const startTime = Date.now();
-    mandelbrot.render(config).then(() => {
+    mandelbrot.render(RenderMode[modeString.toUpperCase() as keyof typeof RenderMode], config).then(() => {
         const duration = Date.now() - startTime;
         console.log('Rendering took ' + duration + 'ms.');
     });

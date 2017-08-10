@@ -13,6 +13,12 @@ interface IModuleWindow extends Window {
 declare var WebAssembly: any;
 declare var Module: any;
 
+export enum RenderMode {
+    TRANSFERRED,
+    SHARED,
+    WASM
+}
+
 export class Mandelbrot {
 
     private readonly _chunkSize = 256;
@@ -26,9 +32,9 @@ export class Mandelbrot {
     private readonly _widthRange: NumberRange;
     private readonly _heightRange: NumberRange;
 
-    private readonly _buffer?: SharedArrayBuffer;
-
     private readonly _scheduler: Scheduler;
+    private readonly _wasmScheduler?: Scheduler;
+    private readonly _buffer?: SharedArrayBuffer;
 
     constructor(canvas: HTMLCanvasElement) {
         this._canvas = canvas;
@@ -38,30 +44,40 @@ export class Mandelbrot {
         this._widthRange = new NumberRange(0, this._width);
         this._heightRange = new NumberRange(0, this._height);
 
-        if (typeof SharedArrayBuffer !== 'undefined') {
-            this._buffer = new SharedArrayBuffer(this._width * this._height * 4);
-        }
-
         const context = this._canvas.getContext('2d');
         if (!context) {
             throw new Error('Unable to get context');
         }
         this._context = context;
 
-        this._scheduler = new Scheduler(typeof WebAssembly !== 'undefined' ? this.renderChunkNative : this.renderChunk, {
+        this._scheduler = new Scheduler(this.renderChunk, {
             'Fractal/Color': ['Color'],
             'Fractal/NumberRange': ['NumberRange']
         });
-    }
 
-    public render(config: Config): Promise<any> {
-        if (!this._buffer) {
-            return this.renderTransfered(config);
+        if (typeof WebAssembly !== 'undefined') {
+            this._wasmScheduler = new Scheduler(this.renderChunkWasm);
         }
-        return this.renderShared(config);
+
+        if (typeof SharedArrayBuffer !== 'undefined') {
+            this._buffer = new SharedArrayBuffer(this._width * this._height * 4);
+        }
     }
 
-    private renderTransfered(config: Config) {
+    public render(mode: RenderMode, config: Config): Promise<any> {
+        switch (mode) {
+            case RenderMode.TRANSFERRED:
+                return this.renderTransferred(config);
+
+            case RenderMode.SHARED:
+                return this.renderShared(config);
+
+            case RenderMode.WASM:
+                return this.renderWasm(config);
+        }
+    }
+
+    private renderTransferred(config: Config) {
         return Promise.all(this.createChunks(config.rectangle).map((chunk) => this._scheduler.apply([config.getDTO(), chunk.getDTO()]).then(({ data, chunkConfig }: { data: Uint32Array, chunkConfig: IChunkConfig }) => {
             this._context.putImageData(
                 new ImageData(new Uint8ClampedArray(data.buffer), chunkConfig.image.width, chunkConfig.image.height),
@@ -72,14 +88,30 @@ export class Mandelbrot {
     }
 
     private renderShared(config: Config) {
-        return Promise.all(this.createChunks(config.rectangle, this._buffer).map((chunk) => this._scheduler.apply([config.getDTO(), chunk.getDTO()]))).then(() => {
-            // Cannot pass SharedArrayBuffer views to ImageData
-            const buffer_view = new Uint8ClampedArray(<SharedArrayBuffer> this._buffer);
-            const array_buffer = new ArrayBuffer(buffer_view.byteLength);
-            const array_buffer_view = new Uint8ClampedArray(array_buffer);
-            array_buffer_view.set(buffer_view);
-            this._context.putImageData(new ImageData(array_buffer_view, this._width, this._height), 0, 0);
-        });
+        if (this._buffer) {
+            return Promise.all(this.createChunks(config.rectangle, this._buffer).map((chunk) => this._scheduler.apply([config.getDTO(), chunk.getDTO()]))).then(() => {
+                // Cannot pass SharedArrayBuffer views to ImageData
+                const buffer_view = new Uint8ClampedArray(<SharedArrayBuffer> this._buffer);
+                const array_buffer = new ArrayBuffer(buffer_view.byteLength);
+                const array_buffer_view = new Uint8ClampedArray(array_buffer);
+                array_buffer_view.set(buffer_view);
+                this._context.putImageData(new ImageData(array_buffer_view, this._width, this._height), 0, 0);
+            });
+        }
+        return Promise.reject('No SharedArrayBuffer support');
+    }
+
+    private renderWasm(config: Config) {
+        if (this._wasmScheduler) {
+            return Promise.all(this.createChunks(config.rectangle).map((chunk) => this._wasmScheduler!.apply([config.getDTO(), chunk.getDTO()]).then(({ data, chunkConfig }: { data: Uint32Array, chunkConfig: IChunkConfig }) => {
+                this._context.putImageData(
+                    new ImageData(new Uint8ClampedArray(data.buffer), chunkConfig.image.width, chunkConfig.image.height),
+                    chunkConfig.image.start.x,
+                    chunkConfig.image.start.y
+                );
+            })));
+        }
+        return Promise.reject('No WebAssembly support');
     }
 
     private createChunks(rectangle: Rectangle, buffer?: SharedArrayBuffer) {
@@ -188,7 +220,7 @@ export class Mandelbrot {
         return [{ chunkConfig }, []];
     }
 
-    private renderChunkNative(config: IConfig, chunkConfig: IChunkConfig) {
+    private renderChunkWasm(config: IConfig, chunkConfig: IChunkConfig) {
         return new Promise((resolve, reject) => {
             if (typeof Module === 'undefined') {
                 const Module = (<IModuleWindow> self).Module = {
