@@ -45,37 +45,42 @@ struct NumberRange {
 	NumberRange(double const min, double const max) : min(min), max(max), size(std::abs(max - min)) {}
 };
 
+struct Buffers {
+	uint32_t * const histogram;
+	uint32_t * const iterations;
+	double * const fractionals;
+};
+
+struct ChunkResult {
+	Buffers const buffers;
+	uint32_t const total;
+};
+
 extern "C" {
-	uint32_t * EMSCRIPTEN_KEEPALIVE iterate(char const * const rawConfig, char const * const rawChunkConfig) {
+
+	ChunkResult * EMSCRIPTEN_KEEPALIVE iterateChunk(char const * const rawConfig, char const * const rawChunkConfig) {
 		json const config(json::parse(rawConfig));
 		json const chunkConfig(json::parse(rawChunkConfig));
 
 		auto const & image = chunkConfig["image"];
 		auto const & complex = chunkConfig["complex"];
 
-		double const log2 = std::log(2);
+		uint32_t const width = image["width"];
+		uint32_t const height = image["height"];
+
+		double const ln2 = std::log(2.0);
 		uint32_t const max_iterations = config["iterations"];
-		uint32_t * const data = new uint32_t[image["width"].get<uint32_t>() * image["height"].get<uint32_t>()];
 
-		double const red = config["red"];
-		double const green = config["green"];
-		double const blue = config["blue"];
-
-		auto colors = std::vector<Color>();
-		for (std::size_t i(0); i < max_iterations; ++i) {
-			double const percentage = (double)i / (double)max_iterations;
-			colors.emplace_back(Color(
-				std::min(255.0, std::floor(255 * percentage * red)),
-				std::min(255.0, std::floor(255 * percentage * green)),
-				std::min(255.0, std::floor(255 * percentage * blue))
-			));
-		}
+		uint32_t * const histogram = new uint32_t[max_iterations]();
+		uint32_t * const iterations = new uint32_t[width * height]();
+		double * const fractionals = new double[width * height]();
 
 		NumberRange const widthRange = NumberRange(image["start"]["x"], image["end"]["x"]);
 		NumberRange const heightRange = NumberRange(image["start"]["y"], image["end"]["y"]);
 		NumberRange const realRange = NumberRange(complex["start"]["x"], complex["end"]["x"]);
 		NumberRange const imaginaryRange = NumberRange(complex["start"]["y"], complex["end"]["y"]);
 
+		uint32_t total = 0;
 		uint32_t index = 0;
 		for(uint32_t y(image["start"]["y"]); y < image["end"]["y"].get<uint32_t>(); ++y) {
 			for(uint32_t x(image["start"]["x"]); x < image["end"]["x"].get<uint32_t>(); ++x, ++index) {
@@ -87,32 +92,84 @@ extern "C" {
 				q *= q;
 				q += jj0;
 
-				Color color = Color::Black;
-				if(q * (q + (i0 - 0.25)) >= 0.25 * jj0) {
-					double iterations = 0;
+				if(q * (q + (i0 - 0.25)) < 0.25 * jj0) {
+					iterations[index] = max_iterations;
+				} else {
+					uint32_t iteration = 0;
 					double ii = 0.0;
 					double jj = 0.0;
-					for(double i(0), j(0); ii + jj < std::pow(2, 16) && iterations < max_iterations; ii = i * i, jj = j * j, ++iterations) {
+					for(double i(0), j(0); ii + jj < std::pow(2, 16) && iteration < max_iterations; ii = i * i, jj = j * j, ++iteration) {
 						double itemp = ii - jj + i0;
 						double jtemp = 2 * i * j + j0;
 						if(i == itemp && j == jtemp) {
-							iterations = max_iterations;
+							iteration = max_iterations;
 							break;
 						}
 						i = itemp;
 						j = jtemp;
 					}
-					if (iterations < max_iterations) {
-						iterations += 1 - std::log(std::log(ii + jj) / 2.0 / log2) / log2;
-						Color color1 = colors[std::floor(iterations)];
-						Color color2 = colors[std::floor(iterations) + 1];
-						color = Color::Lerp(color1, color2, std::fmod(iterations, 1.0));
-					}
+					iterations[index] = iteration;
+                    if (iteration < max_iterations) {
+                        ++histogram[iteration];
+                        ++total;
+                        fractionals[index] = std::fmod(iteration + 1 - std::log(std::log(ii + jj) / 2 / ln2) / ln2, 1.0);
+                    }
 				}
-				data[index] = color.abgr;
 			}
 		}
 
-		return data;
+		return new ChunkResult {
+			Buffers {
+				histogram,
+				iterations,
+				fractionals
+			},
+			total
+		};
 	}
+
+	uint32_t * EMSCRIPTEN_KEEPALIVE colorChunk(char const * const rawConfig, char const * const rawChunkConfig, Buffers * const buffers, uint32_t const total) {
+		json const config(json::parse(rawConfig));
+		json const chunkConfig(json::parse(rawChunkConfig));
+
+		uint32_t const max_iterations = config["iterations"];
+
+		double const red = config["red"];
+		double const green = config["green"];
+		double const blue = config["blue"];
+
+		auto const gradient = [=](double const n) {
+			return Color(
+				std::floor(255 * n * red),
+				std::floor(255 * n * green),
+				std::floor(255 * n * blue)
+			);
+		};
+
+		auto const & image = chunkConfig["image"];
+		uint32_t const width = image["width"];
+		uint32_t const height = image["height"];
+		uint32_t * const pixels = new uint32_t[width * height]();
+
+		uint32_t index = 0;
+		for(uint32_t y(image["start"]["y"]); y < image["end"]["y"].get<uint32_t>(); ++y) {
+			for(uint32_t x(image["start"]["x"]); x < image["end"]["x"].get<uint32_t>(); ++x, ++index) {
+                uint32_t const iteration = buffers->iterations[index];
+                if (iteration < max_iterations) {
+                    double hue = 0.0;
+                    for (uint32_t i(0); i < iteration; ++i) {
+                        hue += (double)buffers->histogram[i] / (double)total;
+                    }
+                    Color const color1 = gradient(hue);
+                    Color const color2 = gradient(hue + (double)buffers->histogram[iteration] / (double)total);
+                    pixels[index] = Color::Lerp(color1, color2, buffers->fractionals[index]).abgr;
+                } else {
+                    pixels[index] = Color::Black.abgr;
+                }
+            }
+        }
+
+        return pixels;
+	}
+
 }
