@@ -1,7 +1,7 @@
 import { Rectangle, IRectangle } from 'Fractal/Rectangle';
 import { NumberRange } from 'Fractal/NumberRange';
 import { Color } from 'Fractal/Color';
-import { Scheduler } from 'Fractal/Scheduler';
+import { Scheduler, ITaskResult } from 'Fractal/Scheduler';
 import { Point } from 'Fractal/Point';
 import { Config, IConfig } from 'Fractal/Config';
 import { IBuffers, ChunkConfig, IChunkConfig, IChunkResult } from 'Fractal/ChunkConfig';
@@ -18,6 +18,9 @@ export enum RenderMode {
     SHARED,
     WASM
 }
+
+type IterateChunk = (config: IConfig, chunkConfig: IChunkConfig, buffers?: IBuffers) => ITaskResult | Promise<ITaskResult>;
+type ColorChunk = (config: IConfig, chunkConfig: IChunkConfig, buffers: IBuffers, total: number) => ITaskResult | Promise<ITaskResult>;
 
 export class Mandelbrot {
 
@@ -76,13 +79,16 @@ export class Mandelbrot {
 
         if (buffers) {
             buffers.histogram = histogram;
-            return [{ buffers, total, chunkConfig }, [histogram.buffer]];
+            return { result: { buffers, total, chunkConfig }, transferables: [histogram.buffer] };
         }
-        return [{ buffers: { histogram, iterations, fractionals }, total, chunkConfig }, [
-            histogram.buffer,
-            iterations.buffer,
-            fractionals.buffer
-        ]];
+        return {
+            result: { buffers: { histogram, iterations, fractionals }, total, chunkConfig }, 
+            transferables: [
+                histogram.buffer,
+                iterations.buffer,
+                fractionals.buffer
+            ]
+        };
     }
 
     private static colorChunk(config: IConfig, chunkConfig: IChunkConfig, buffers: IBuffers, total: number) {
@@ -118,7 +124,7 @@ export class Mandelbrot {
             }
         }
 
-        return [{ pixels, chunkConfig }, buffers.pixels ? [] : [pixels.buffer]];
+        return { result: { pixels, chunkConfig }, transferables: buffers.pixels ? [] : [pixels.buffer] };
     }
 
     private static iterateChunkWasm(config: IConfig, chunkConfig: IChunkConfig) {
@@ -167,11 +173,14 @@ export class Mandelbrot {
             Module._free(rawConfigOffset);
             Module._free(rawChunkConfigOffset);
 
-            return [{ buffers: { histogram, iterations, fractionals }, total, chunkConfig }, [
-                histogram.buffer,
-                iterations.buffer,
-                fractionals.buffer
-            ]];
+            return {
+                result: { buffers: { histogram, iterations, fractionals }, total, chunkConfig },
+                transferables: [
+                    histogram.buffer,
+                    iterations.buffer,
+                    fractionals.buffer
+                ]
+            };
         });
     }
 
@@ -226,7 +235,10 @@ export class Mandelbrot {
             Module._free(rawConfigOffset);
             Module._free(rawChunkConfigOffset);
 
-            return [{ pixels, chunkConfig }, [pixels.buffer]];
+            return {
+                result: { pixels, chunkConfig },
+                transferables: [pixels.buffer]
+            };
         });
     }
 
@@ -241,11 +253,11 @@ export class Mandelbrot {
     private readonly _widthRange: NumberRange;
     private readonly _heightRange: NumberRange;
 
-    private readonly _iterateScheduler: Scheduler;
-    private readonly _colorScheduler: Scheduler;
+    private readonly _iterateScheduler: Scheduler<IterateChunk>;
+    private readonly _colorScheduler: Scheduler<ColorChunk>;
 
-    private readonly _wasmIterateScheduler?: Scheduler;
-    private readonly _wasmColorScheduler?: Scheduler;
+    private readonly _wasmIterateScheduler?: Scheduler<IterateChunk>;
+    private readonly _wasmColorScheduler?: Scheduler<ColorChunk>;
 
     private _buffers?: IBuffers;
 

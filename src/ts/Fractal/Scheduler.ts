@@ -24,7 +24,12 @@ export interface IQueuedTask {
     transferables: any[];
 }
 
-export class Scheduler {
+export interface ITaskResult<R = any> {
+    result: R;
+    transferables: any[];
+}
+
+export class Scheduler<T extends (...parameters: any[]) => ITaskResult | Promise<ITaskResult>> {
 
     private readonly _moduleMap?: IModuleMap;
 
@@ -36,7 +41,7 @@ export class Scheduler {
 
     private _queue: IQueuedTask[] = [];
 
-    constructor(task: Function, moduleMap?: IModuleMap) {
+    constructor(task: T, moduleMap?: IModuleMap) {
         this._moduleMap = moduleMap;
 
         const task_source = URL.createObjectURL(new Blob([this.getRunner(task)], {
@@ -55,7 +60,7 @@ export class Scheduler {
         return this.schedule(parameters, transferables);
     }
 
-    private getRunner(task: Function) {
+    private getRunner(task: T) {
         let task_source = task.toString();
         task_source = task_source.substr(task_source.indexOf('(')).replace(/\{/, '=> {');
         return `
@@ -76,26 +81,20 @@ export class Scheduler {
                     }
                     try {
                         const returnValue = (${ task_source }).apply(self, parameters);
-                        if(returnValue) {
-                            if(returnValue instanceof Promise) {
-                                returnValue.then(promiseReturnValue => {
-                                    const result = promiseReturnValue[0];
-                                    const transferables = promiseReturnValue[1];
-                                    self.postMessage({taskId, result}, transferables);
-                                }).catch(error => {
-                                    console.error(error);
-                                    self.postMessage({
-                                        taskId,
-                                        error: JSON.stringify(error)
-                                    });
+                        if(returnValue instanceof Promise) {
+                            returnValue.then(promiseReturnValue => {
+                                const { result, transferables } = promiseReturnValue;
+                                self.postMessage({ taskId, result }, transferables);
+                            }).catch(error => {
+                                console.error(error);
+                                self.postMessage({
+                                    taskId,
+                                    error: JSON.stringify(error)
                                 });
-                            } else {
-                                const result = returnValue[0];
-                                const transferables = returnValue[1];
-                                self.postMessage({taskId, result}, transferables);
-                            }
+                            });
                         } else {
-                            self.postMessage({taskId});
+                            const { result, transferables } = returnValue;
+                            self.postMessage({ taskId, result }, transferables);
                         }
                     } catch(error) {
                         console.error(error);

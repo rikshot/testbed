@@ -112,7 +112,7 @@ extern "C" {
                     if (iteration < max_iterations) {
                         ++histogram[iteration];
                         ++total;
-                        fractionals[index] = std::fmod(iteration + 1 - std::log(std::log(ii + jj) / 2 / ln2) / ln2, 1.0);
+                        fractionals[index] = std::fmod((double)iteration + 1.0 - std::log(std::log(ii + jj) / 2.0 / ln2) / ln2, 1.0);
                     }
 				}
 			}
