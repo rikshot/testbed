@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <title>OpenCV</title>
+        <meta charset="utf-8" />
+        <style>
+            video, canvas {
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
+        </style>
+        <script>
+            var Module = {
+                ENVIRONMENT: 'WEB',
+                wasmBinaryFile: 'https://192.168.1.144/build/src/html/opencv.wasm',
+                filePackagePrefixURL: 'https://192.168.1.144/build/src/html/',
+                _main: () => {
+                    navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } }).then((stream) => {
+                        const video = document.getElementById('video');
+                        const canvas = document.getElementById('canvas');
+                        const context = canvas.getContext('2d');
+
+                        video.onloadedmetadata = () => {
+                            canvas.width = video.videoWidth;
+                            canvas.height = video.videoHeight;
+                        };
+
+                        video.srcObject = stream;
+
+                        setInterval(() => {
+                            context.drawImage(video, 0, 0);
+                            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                            const imageDataOffset = Module._malloc(imageData.data.byteLength);
+                            Module.HEAPU8.set(imageData.data, imageDataOffset);
+                            Module.ccall('processFrame', null, ['number', 'number', 'number'], [canvas.width, canvas.height, imageDataOffset]);
+                            const output = Module.HEAPU8.slice(imageDataOffset, imageDataOffset + imageData.data.byteLength);
+                            Module._free(imageDataOffset);
+                            context.putImageData(new ImageData(new Uint8ClampedArray(output), canvas.width, canvas.height), 0, 0);
+                        }, Math.floor(1 / 30 * 1000));
+                    });
+                }
+            }
+        </script>
+        <script src="https://192.168.1.144/build/src/html/opencv.js"></script>
+    </head>
+    <body>
+        <video id="video" autoplay="autoplay"></video>
+        <canvas id="canvas"></canvas>
+    </body>
+</html>

@@ -12,17 +12,23 @@
             "protocol": "inspector",
             "sourceMaps": true,
             "args": [
-                "-u",
-                "bdd",
-                "--timeout",
-                "999999",
-                "--colors",
+                "--opts",
+                "${workspaceRoot}/.mocha.opts",
                 "${workspaceRoot}/build/test/ts"
             ],
-            "runtimeArgs": [ "--nolazy" ],
+            "runtimeArgs": [
+                "--nolazy"
+            ],
             "env": {
-                "NODE_PATH": "${workspaceRoot}/build/src/ts:${workspaceRoot}/build/test/ts"
+                "NODE_PATH": "${workspaceRoot}/build/src:${workspaceRoot}/build/src/ts:${workspaceRoot}/build/test/ts"
             },
+            "outFiles": [
+                "${workspaceRoot}/build/**/*.js"
+            ],
+            "skipFiles": [
+                "node_modules/**/*.js",
+                "<node_internals>/**/*.js"
+            ],
             "internalConsoleOptions": "openOnSessionStart"
         }
     ]

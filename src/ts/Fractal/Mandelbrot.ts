@@ -1,8 +1,8 @@
-import { Rectangle, IRectangle } from 'Fractal/Rectangle';
+import { Rectangle, IRectangle } from 'Sandbox/Rectangle';
 import { NumberRange } from 'Fractal/NumberRange';
-import { Color } from 'Fractal/Color';
+import { Color } from 'Sandbox/Color';
 import { Scheduler, ITaskResult } from 'Fractal/Scheduler';
-import { Point } from 'Fractal/Point';
+import { Vector } from 'Sandbox/Vector';
 import { Config, IConfig } from 'Fractal/Config';
 import { IBuffers, ChunkConfig, IChunkConfig, IChunkResult } from 'Fractal/ChunkConfig';
 
@@ -82,7 +82,7 @@ export class Mandelbrot {
             return { result: { buffers, total, chunkConfig }, transferables: [histogram.buffer] };
         }
         return {
-            result: { buffers: { histogram, iterations, fractionals }, total, chunkConfig }, 
+            result: { buffers: { histogram, iterations, fractionals }, total, chunkConfig },
             transferables: [
                 histogram.buffer,
                 iterations.buffer,
@@ -385,18 +385,18 @@ export class Mandelbrot {
             const chunkWidth = x + this._chunkSize > this._width ? this._width - x : this._chunkSize;
             for (let y = 0; y < this._height; y += this._chunkSize) {
                 const chunkHeight = y + this._chunkSize > this._height ? this._height - y : this._chunkSize;
-                const screenStart = new Point(x, y);
-                const screenEnd = new Point(x + chunkWidth, y + chunkHeight);
+                const screenStart = new Vector(x, y);
+                const screenEnd = new Vector(x + chunkWidth, y + chunkHeight);
                 chunks.push(new ChunkConfig(
                     this._width,
                     this._height,
                     new Rectangle(screenStart, screenEnd),
                     new Rectangle(
-                        new Point(
+                        new Vector(
                             NumberRange.Scale(this._widthRange, x, realRange),
                             NumberRange.Scale(this._heightRange, y, imaginaryRange)
                         ),
-                        new Point(
+                        new Vector(
                             NumberRange.Scale(this._widthRange, x + chunkWidth, realRange),
                             NumberRange.Scale(this._heightRange, y + chunkHeight, imaginaryRange)
                         )

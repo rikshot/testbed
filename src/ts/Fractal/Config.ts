@@ -1,4 +1,4 @@
-import { Rectangle, IRectangle } from 'Fractal/Rectangle';
+import { Rectangle, IRectangle } from 'Sandbox/Rectangle';
 
 export interface IConfig {
     iterations: number;

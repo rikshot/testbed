@@ -1,4 +1,4 @@
-import { Rectangle, IRectangle } from 'Fractal/Rectangle';
+import { Rectangle, IRectangle } from 'Sandbox/Rectangle';
 
 export interface IBuffers {
     histogram: Uint32Array;

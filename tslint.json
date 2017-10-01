@@ -27,8 +27,7 @@
             false
         ],
         "prefer-conditional-expression": false,
-        "ordered-imports": [
-            false
-        ]
+        "ordered-imports": false,
+        "no-submodule-imports": false
     }
 }

@@ -8,11 +8,12 @@
       "test/ts"
     ],
     "baseUrl": "src/ts",
-    "outDir": "build/src/ts",
+    "outDir": "build",
     "pretty": true,
-    "inlineSourceMap": true
+    "sourceMap": true
   },
   "include": [
-    "src/ts/**/*.ts"
+      "src/ts/**/*.ts",
+      "test/ts/**/*Test.ts"
   ]
 }

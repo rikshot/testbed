@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Sandbox</title>
+        <meta charset="utf-8" />
+        <link type="text/css" rel="stylesheet" href="/build/src/css/main.css" media="screen" />
+        <script src="/node_modules/systemjs/dist/system.js"></script>
+    </head>
+    <body>
+        <canvas id="sandbox" width="1000" height="1000"></canvas>
+        <script>
+            System.import('/system.config.js').then(() => {
+                System.import('Sandbox/Main');
+            });
+        </script>
+    </body>
+</html>

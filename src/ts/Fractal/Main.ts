@@ -1,7 +1,7 @@
 import { RenderMode, Mandelbrot } from 'Fractal/Mandelbrot';
 import { NumberRange } from 'Fractal/NumberRange';
-import { Point } from 'Fractal/Point';
-import { Rectangle } from 'Fractal/Rectangle';
+import { Vector } from 'Sandbox/Vector';
+import { Rectangle } from 'Sandbox/Rectangle';
 import { Config } from 'Fractal/Config';
 
 const getConfig = (rectangle: Rectangle): Config => {
@@ -28,10 +28,10 @@ if (!selectionContext) {
 const canvas = <HTMLCanvasElement> document.getElementById('fractal');
 const mandelbrot = new Mandelbrot(canvas);
 
-let start: Point | undefined;
-let complexStart: Point | undefined;
+let start: Vector | undefined;
+let complexStart: Vector | undefined;
 
-let rectangle = new Rectangle(new Point(-2.5, -1.0), new Point(1.0, 1.0));
+let rectangle = new Rectangle(new Vector(-2.5, -1.0), new Vector(1.0, 1.0));
 
 let realRange = new NumberRange(-2.5, 1.0);
 let imaginaryRange = new NumberRange(-1.0, 1.0);
@@ -55,12 +55,12 @@ selection.addEventListener('mousedown', (event: MouseEvent) => {
     const canvasWidthRange = new NumberRange(0, canvas.width);
     const canvasHeightRange = new NumberRange(0, canvas.height);
 
-    start = new Point(
+    start = new Vector(
         NumberRange.Scale(elementWidthRange, event.clientX, canvasWidthRange),
         NumberRange.Scale(elementHeightRange, event.clientY, canvasHeightRange)
     );
 
-    complexStart = new Point(
+    complexStart = new Vector(
         NumberRange.Scale(canvasWidthRange, start.x, realRange),
         NumberRange.Scale(canvasHeightRange, start.y, imaginaryRange)
     );
@@ -74,7 +74,7 @@ selection.addEventListener('mousemove', (event) => {
         const canvasWidthRange = new NumberRange(0, canvas.width);
         const canvasHeightRange = new NumberRange(0, canvas.height);
 
-        const current = new Point(
+        const current = new Vector(
             NumberRange.Scale(elementWidthRange, event.clientX, canvasWidthRange),
             NumberRange.Scale(elementHeightRange, event.clientY, canvasHeightRange)
         );
@@ -99,7 +99,7 @@ selection.addEventListener('mouseup', (event) => {
     const canvasWidthRange = new NumberRange(0, canvas.width);
     const canvasHeightRange = new NumberRange(0, canvas.height);
 
-    rectangle = new Rectangle(complexStart, new Point(
+    rectangle = new Rectangle(complexStart, new Vector(
         NumberRange.Scale(canvasWidthRange, NumberRange.Scale(elementWidthRange, event.clientX, canvasWidthRange), realRange),
         NumberRange.Scale(canvasHeightRange, NumberRange.Scale(elementHeightRange, event.clientY, canvasHeightRange), imaginaryRange)
     ));
@@ -125,7 +125,7 @@ resetButton.addEventListener('click', (event: Event) => {
 
     realRange = new NumberRange(-2.5, 1.0);
     imaginaryRange = new NumberRange(-1.0, 1.0);
-    rectangle = new Rectangle(new Point(-2.5, -1.0), new Point(1.0, 1.0));
+    rectangle = new Rectangle(new Vector(-2.5, -1.0), new Vector(1.0, 1.0));
 
     render(rectangle);
 });

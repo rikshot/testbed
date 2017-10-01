@@ -3,6 +3,7 @@
 export class Color {
 
     public static Black = new Color(0, 0, 0);
+    public static White = new Color(255, 255, 255);
 
     public static Lerp(color1: Color, color2: Color, value: number) {
         return new Color(
@@ -47,6 +48,10 @@ export class Color {
 
     public abgr() {
         return this._abgr;
+    }
+
+    public css() {
+        return 'rgba(' + this._red + ',' + this._green + ',' + this._blue + ',' + this._alpha + ')';
     }
 
 }

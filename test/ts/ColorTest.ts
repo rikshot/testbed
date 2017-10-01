@@ -1,7 +1,7 @@
 import 'mocha';
 import { assert } from 'chai';
 
-import { Color } from 'Fractal/Color';
+import { Color } from 'Sandbox/Color';
 
 describe('Color', () => {
 

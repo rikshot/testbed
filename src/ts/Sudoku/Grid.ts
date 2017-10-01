@@ -85,7 +85,7 @@ export class Grid {
 
     public pretty() {
         let output  = '';
-        for (let row = 0; row < 9; ++row ) {
+        for (let row = 0; row < 9; ++row) {
             if (!(row % 3)) {
                 output += '+-------+-------+-------+\n';
             }
@@ -103,7 +103,7 @@ export class Grid {
         const cell = this._cells[index];
         if (!cell.value()) {
             cell.candidates().set();
-            for (const peer of this._peers[index] ) {
+            for (const peer of this._peers[index]) {
                 if (peer.value()) {
                     cell.candidates().unset(peer.value());
                     if (cell.candidates().none()) {
