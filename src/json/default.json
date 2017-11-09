@@ -1,0 +1,89 @@
+{
+    "width": 500,
+    "height": 500,
+    "materials": [
+        {
+            "id": "default",
+            "density": 1,
+            "restitution": 0.25,
+            "color": [255, 255, 255, 255]
+        }
+    ],
+    "entities": [
+        {
+            "id": "box1",
+            "shape": {
+                "type": "rectangle",
+                "width": 50,
+                "height": 50
+            },
+            "material": "default",
+            "position": [250, 285]
+        },
+        {
+            "id": "box2",
+            "shape": {
+                "type": "rectangle",
+                "width": 50,
+                "height": 50
+            },
+            "material": "default",
+            "position": [250, 335]
+        },
+        {
+            "id": "box3",
+            "shape": {
+                "type": "rectangle",
+                "width": 100,
+                "height": 20
+            },
+            "material": "default",
+            "position": [250, 250],
+            "kinematic": true
+        },
+        {
+            "id": "left_wall",
+            "shape": {
+                "type": "rectangle",
+                "width": 10,
+                "height": 500
+            },
+            "material": "default",
+            "position": [0, 250],
+            "kinematic": true
+        },
+        {
+            "id": "right_wall",
+            "shape": {
+                "type": "rectangle",
+                "width": 10,
+                "height": 500
+            },
+            "material": "default",
+            "position": [500, 250],
+            "kinematic": true
+        },
+        {
+            "id": "ceiling",
+            "shape": {
+                "type": "rectangle",
+                "width": 500,
+                "height": 10
+            },
+            "material": "default",
+            "position": [250, 500],
+            "kinematic": true
+        },
+        {
+            "id": "floor",
+            "shape": {
+                "type": "rectangle",
+                "width": 500,
+                "height": 10
+            },
+            "material": "default",
+            "position": [250, 0],
+            "kinematic": true
+        }
+    ]
+}

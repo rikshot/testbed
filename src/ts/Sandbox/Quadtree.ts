@@ -76,11 +76,9 @@ export class Quadtree<T> {
     }
 
     public clear(): void {
-        if (this._count) {
-            this._objects = new Array(this._size);
-            this._rectangles = new Array(this._size);
-            this._count = 0;
-        }
+        this._objects = new Array(this._size);
+        this._rectangles = new Array(this._size);
+        this._count = 0;
         if (this._quadrants) {
             delete this._quadrants;
         }

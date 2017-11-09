@@ -4,6 +4,7 @@
     ],
     "rules": {
         "quotemark": [
+            true,
             "single"
         ],
         "object-literal-sort-keys": false,
@@ -15,6 +16,7 @@
             }
         ],
         "variable-name": [
+            true,
             "check-format",
             "allow-leading-underscore"
         ],

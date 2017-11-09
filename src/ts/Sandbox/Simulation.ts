@@ -1,3 +1,5 @@
+import { Color } from 'Sandbox/Color';
+import { Material } from 'Sandbox/Material';
 import { Segment } from 'Sandbox/Segment';
 import { Rectangle } from 'Sandbox/Rectangle';
 import { Entity } from 'Sandbox/Entity';
@@ -6,7 +8,97 @@ import { Contact } from 'Sandbox/Contact';
 import { Shape } from 'Sandbox/Shape';
 import { Vector } from 'Sandbox/Vector';
 
+type IColorJSON = [number, number, number, number];
+
+interface IMaterialJSON {
+    id: string;
+    density: number;
+    restitution: number;
+    color: IColorJSON;
+}
+
+type IVectorJSON = [number, number];
+
+interface IRectangleJSON {
+    type: 'rectangle';
+    width: number;
+    height: number;
+}
+
+interface IPolygonJSON {
+    type: 'polygon';
+    vertices: IVectorJSON[];
+}
+
+type IShapeJSON = IRectangleJSON |  IPolygonJSON;
+
+interface IEntityJSON {
+    id: string;
+    shape: IShapeJSON;
+    material: string;
+    position: IVectorJSON;
+    kinematic?: boolean;
+}
+
+export interface ISimulationJSON {
+    width: number;
+    height: number;
+    materials: IMaterialJSON[];
+    entities: IEntityJSON[];
+}
+
 export class Simulation {
+
+    public static Fetch(url: string): Promise<Simulation> {
+        return fetch(url).then((response) => {
+            return response.json();
+        }).then((simulation: ISimulationJSON) => {
+            return Simulation.Parse(simulation);
+        });
+    }
+
+    public static Parse(json_simulation: ISimulationJSON): Simulation {
+        const materials: { [key: string]: Material } = {};
+        json_simulation.materials.forEach((material) => {
+            materials[material.id] = new Material(
+                material.density,
+                material.restitution,
+                new Color(
+                    material.color[0],
+                    material.color[1],
+                    material.color[2],
+                    material.color[3]
+                )
+            );
+        });
+        const simulation = new Simulation(json_simulation.width, json_simulation.height);
+        json_simulation.entities.forEach((json_entity) => {
+            const shape = (() => {
+                switch (json_entity.shape.type) {
+                    case 'rectangle':
+                        return new Shape(Rectangle.Create(json_entity.shape.width, json_entity.shape.height).vertices);
+
+                    case 'polygon':
+                        return new Shape(json_entity.shape.vertices.map((vertex) => new Vector(vertex[0], vertex[1])));
+                }
+            })();
+            const entity = new Entity(
+                shape,
+                materials[json_entity.material]
+            );
+            if (json_entity.position) {
+                entity.position = new Vector(
+                    json_entity.position[0],
+                    json_entity.position[1]
+                );
+            }
+            if (json_entity.kinematic) {
+                entity.kinematic = true;
+            }
+            simulation.entities.push(entity);
+        });
+        return simulation;
+    }
 
     public readonly width: number;
     public readonly height: number;
@@ -39,6 +131,7 @@ export class Simulation {
         for (const entity of this.entities) {
             if (!entity.kinematic && !entity.frozen) {
                 entity.linear_acceleration = new Vector(0, -9.81);
+                entity.angular_acceleration = 0;
             }
         }
 
@@ -51,7 +144,7 @@ export class Simulation {
         this.find_contacts();
 
         if (this._contacts.length > 0) {
-            this.resolve_collisions();
+            // this.resolve_collisions();
 
             for (let island of this._contacts) {
                 island = island.filter((contact) => {
@@ -93,7 +186,7 @@ export class Simulation {
                 const colliders = this.quadtree.find(this._bounding_boxes.get(entity)!);
                 for (const collider of colliders) {
                     if (collider !== entity && (!entity.frozen || !collider.frozen)) {
-                        if (!this._collisions.has(collider) || !this._collisions.get(collider)!.has(entity)) {
+                        if (!this._collisions.has(collider) ||  !this._collisions.get(collider)!.has(entity)) {
                             if (this._collisions.has(entity)) {
                                 this._collisions.get(entity)!.add(collider);
                             } else {
@@ -274,22 +367,22 @@ export class Simulation {
                 const br = contact.bp.sub(b.position);
 
                 if (!b.kinematic) {
-                  const arv = a.linear_velocity.add(ar.right().mul(a.angular_velocity));
-                  const brv = b.linear_velocity.add(br.right().mul(b.angular_velocity));
-                  B[i] += 2 * normal.right().mul(b.angular_velocity).dot(arv.sub(brv));
+                    const arv = a.linear_velocity.add(ar.mul(a.angular_velocity));
+                    const brv = b.linear_velocity.add(br.mul(b.angular_velocity));
+                    B[i] += 2 * normal.mul(b.angular_velocity).dot(arv.sub(brv));
                 }
 
                 if (!a.kinematic) {
-                    B[i] += normal.dot(a.linear_acceleration.add(ar.right().mul(a.angular_acceleration)).add(ar.right().mul(a.angular_velocity * a.angular_velocity)));
+                    B[i] += normal.dot(a.linear_acceleration.add(ar.mul(a.angular_acceleration)).add(ar.mul(a.angular_velocity * a.angular_velocity)));
                 }
 
                 if (!b.kinematic) {
-                    B[i] -= normal.dot(b.linear_acceleration.add(br.right().mul(b.angular_acceleration)).add(br.right().mul(b.angular_velocity * b.angular_velocity)));
+                    B[i] -= normal.dot(b.linear_acceleration.add(br.mul(b.angular_acceleration)).add(br.mul(b.angular_velocity * b.angular_velocity)));
                 }
             }
 
             const f: number[] = new Array(n).fill(0);
-            for (let iterations = 0; iterations < 100; ++iterations) {
+            for (let iterations = 0; iterations < 10; ++iterations) {
                 for (let i = 0; i < n; ++i) {
                     let q = B[i];
                     for (let j = 0; j < n; ++j) {
@@ -327,6 +420,198 @@ export class Simulation {
         }
     }
 
+    private resolve_forces(n: number, A: number[][], B: number[]): number[] {
+        const f = new Array(n).fill(0);
+        const a = B.slice();
+        const C = new Array(n).fill(false);
+        const NC = new Array(n).fill(false);
+
+        const maxStep = (delta_f: number[], delta_a: number[], d: number) => {
+            let s = Number.POSITIVE_INFINITY;
+            let j = -1;
+
+            if (delta_a[d] > 0.0) {
+                j = d;
+                s = -a[d] / delta_a[d];
+            }
+
+            for (let i = 0; i < n; ++i) {
+                if (C[i] && delta_f[i] < 0.0) {
+                    const sPrime = -f[i] / delta_f[i];
+                    if (sPrime < s) {
+                        s = sPrime;
+                        j = i;
+                    }
+                }
+            }
+
+            for (let i = 0; i < n; ++i) {
+                if (NC[i] && delta_a[i] < 0.0) {
+                    const sPrime = -a[i] / delta_a[i];
+                    if (sPrime < s) {
+                        s = sPrime;
+                        j = i;
+                    }
+                }
+            }
+
+            if (s < 0.0) {
+                throw new Error('stepSize is negative');
+            }
+
+            return [j, s];
+        };
+
+        const solve = (matrix: number[][]) => {
+            const x = new Array(n).fill(0);
+
+            const nrow = new Array(n);
+            for (let i = 0; i < n; ++i) {
+                nrow[i] = i;
+            }
+
+            for (let i = 0; i < n - 1; ++i) {
+                let p = i;
+                let max = Math.abs(matrix[nrow[p]][i]);
+                for (let j = i + 1; j < n; ++j) {
+                    if (Math.abs(matrix[nrow[j]][i]) > max) {
+                        max = Math.abs(matrix[nrow[j]][i]);
+                        p = j;
+                    }
+                }
+
+                if (nrow[i] !== nrow[p]) {
+                    const ncopy = nrow[i];
+                    nrow[i] = nrow[p];
+                    nrow[p] = ncopy;
+                }
+
+                for (let j = i + 1; j < n; ++j) {
+                    const m = matrix[nrow[j]][i] / matrix[nrow[i]][i];
+                    for (let k = 0; k < n + 1; ++k) {
+                        matrix[nrow[j]][k] -= m * matrix[nrow[i]][k];
+                    }
+                }
+            }
+
+            x[n - 1] = matrix[nrow[n - 1]][n] / matrix[nrow[n - 1]][n - 1];
+            for (let i = n - 2; i >= 0; --i) {
+                let sum = 0;
+                for (let j = i + 1; j < n; ++j) {
+                    sum += matrix[nrow[i]][j] * x[j];
+                }
+                x[i] = (matrix[nrow[i]][n] - sum) / matrix[nrow[i]][i];
+            }
+
+            return x;
+        };
+
+        const fdirection = (delta_f: number[], d: number) => {
+            delta_f[d] = 1.0;
+
+            let c = 0;
+            for (let i = 0; i < n; ++i) {
+                if (C[i]) {
+                    ++c;
+                }
+            }
+
+            if (c) {
+                const Acc = new Array(c).fill(new Array(c + 1).fill(0));
+
+                let p = 0;
+                for (let i = 0; i < n; ++i) {
+                    if (C[i]) {
+                        let q = 0;
+                        for (let j = 0; j < n; ++j) {
+                            if (C[j]) {
+                                Acc[p][q] = A[i][j];
+                                ++q;
+                            }
+                        }
+
+                        Acc[p][c] = -A[i][d];
+                        ++p;
+                    }
+                }
+
+                const x = solve(Acc);
+
+                p = 0;
+                for (let i = 0; i < n; ++i) {
+                    if (C[i]) {
+                        delta_f[i] = x[p++];
+                    }
+                }
+            }
+        };
+
+        const mul = (a: number[][], b: number[]) => {
+            const temp = new Array(a.length).fill(new Array(b.length).fill(0));
+            for (let row = 0; row < a.length; ++row) {
+                for (let i = 0; i < a[0].length; ++i) {
+                    temp[row][0] += a[row][i] * b[i];
+                }
+            }
+            return temp;
+        };
+
+        for (let d = 0; d < n; ++d) {
+            if (a[d] >= 0.0) {
+                NC[d] = true;
+            }
+
+            while (a[d] < 0.0) {
+                const delta_f = new Array(n).fill(0);
+                fdirection(delta_f, d);
+
+                const delta_a = mul(A, delta_f);
+
+                for (let i = 0; i < n; ++i) {
+                    if (C[i] && Math.abs(delta_a[i]) > 10e-10) {
+                        throw new Error('fdirection failed!');
+                    }
+                }
+
+                const [j, stepSize] = maxStep(delta_f, delta_a, d);
+
+                for (let i = 0; i < n; ++i) {
+                    f[i] += stepSize * delta_f[i];
+                    a[i] += stepSize * delta_a[i];
+
+                    if (f[i] < 0.0 && -10e-10 < f[i]) {
+                        f[i] = 0.0;
+                    }
+
+                    if (a[i] < 0.0 && -10e-10 < a[i]) {
+                        a[i] = 0.0;
+                    }
+
+                    if ((NC[i] || C[i]) && a[i] < 0.0) {
+                        throw new Error('Acceleration cannot be negative');
+                    }
+
+                    if (f[i] < 0.0) {
+                        throw new Error('Reaction force cannot be negative!');
+                    }
+                }
+
+                if (C[j]) {
+                    C[j] = false;
+                    NC[j] = true;
+                } else if (NC[j]) {
+                    NC[j] = false;
+                    C[j] = true;
+                } else {
+                    C[j] = true;
+                    break;
+                }
+            }
+        }
+
+        return f;
+    }
+
     private evaluate(initial: Entity, time_step: number, derivative: [Vector, Vector, number, number]): [Vector, Vector, number, number] {
         return [
             initial.linear_velocity.add(derivative[1].mul(time_step)),
@@ -349,7 +634,7 @@ export class Simulation {
                 entity.orientation += (a[2] + (b[2] + c[2]) * 2 + d[2]) / 6 * time_step;
                 entity.angular_velocity += (a[3] + (b[3] + c[3]) * 2 + d[3]) / 6 * time_step;
 
-                const threshold = 0.001;
+                const threshold = 0.01;
                 if (entity.linear_velocity.length_squared() <= threshold && Math.abs(entity.angular_velocity) <= threshold) {
                     entity.frozen = true;
                     entity.linear_velocity = Vector.Zero;

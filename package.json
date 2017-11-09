@@ -10,13 +10,13 @@
   "license": "MIT",
   "dependencies": {
     "@types/chai": "4.0.4",
-    "@types/mocha": "2.2.42",
-    "@types/systemjs": "0.20.4",
+    "@types/mocha": "2.2.44",
+    "@types/systemjs": "0.20.6",
     "chai": "4.1.2",
-    "mocha": "3.5.0",
-    "nyc": "11.1.0",
-    "systemjs": "0.20.18",
-    "tslint": "5.7.0",
-    "typescript": "2.5.2"
+    "mocha": "4.0.1",
+    "nyc": "11.3.0",
+    "systemjs": "0.20.19",
+    "tslint": "5.8.0",
+    "typescript": "2.6.1"
   }
 }
