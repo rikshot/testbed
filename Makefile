@@ -1,4 +1,8 @@
+# Options
+
 MAKEFLAGS += -rR
+
+# Binaries
 
 BIN := node_modules/.bin
 TSC := $(BIN)/tsc
@@ -6,20 +10,30 @@ TSLINT := $(BIN)/tslint
 MOCHA := $(BIN)/_mocha
 NYC := $(BIN)/nyc
 
+# Directories
+
 SOURCE_DIR := src
 TEST_DIR := test
 BUILD_DIR := build
 SOURCE_BUILD_DIR := $(BUILD_DIR)/$(SOURCE_DIR)
 TEST_BUILD_DIR := $(BUILD_DIR)/$(TEST_DIR)
 
+# Sources
+
 SOURCES := $(shell find $(SOURCE_DIR) -type f -not -name '*.d.ts')
 TESTS := $(shell find $(TEST_DIR) -type f -not -name '*.d.ts')
+
+# Targets
 
 TARGETS := $(addprefix $(BUILD_DIR)/, $(patsubst %.ts, %.js, $(filter %.ts %.html %.json %.css, $(SOURCES))))
 TEST_TARGETS := $(addprefix $(BUILD_DIR)/, $(patsubst %.ts, %.js, $(filter %.ts %.html, $(TESTS))))
 
+# Built-in targets
+
 .PHONY: all test test-coverage clean lint setup watch
 .NOTPARALLEL: $(TARGETS) $(TEST_TARGETS)
+
+# Main targets
 
 all: $(TARGETS)
 
@@ -29,10 +43,14 @@ test: $(TEST_TARGETS) $(TARGETS)
 test-coverage: $(TEST_TARGETS) $(TARGETS)
 	@NODE_PATH=$(SOURCE_BUILD_DIR):$(SOURCE_BUILD_DIR)/ts:$(TEST_BUILD_DIR)/ts $(NYC) $(MOCHA) --opts .mocha.opts $(TEST_TARGETS)
 
+# VPaths
+
 vpath %.ts $(SOURCE_DIR)/ts $(TEST_DIR)/ts
 vpath %.html $(SOURCE_DIR)/html $(TEST_DIR)/html
 vpath %.json $(SOURCE_DIR)/json
 vpath %.css $(SOURCE_DIR)/css
+
+# Implicit rules
 
 $(SOURCE_BUILD_DIR)/ts/%.js: %.ts
 	@$(TSC) --project tsconfig.json
@@ -55,6 +73,8 @@ $(TEST_BUILD_DIR)/html/%.html: %.html
 %::
 	$(warning No rule specified for target "$@")
 
+# Directory rules
+
 $(filter %.js, $(TARGETS)): | $(SOURCE_BUILD_DIR)/ts
 $(filter %.html, $(TARGETS)): | $(SOURCE_BUILD_DIR)/html
 $(filter %.json, $(TARGERS)): | $(SOURCE_BUILD_DIR)/json
@@ -62,6 +82,8 @@ $(filter %.css, $(TARGETS)): | $(SOURCE_BUILD_DIR)/css
 
 $(filter %.js, $(TEST_TARGETS)): | $(TEST_BUILD_DIR)/ts
 $(filter %.html, $(TEST_TARGETS)): | $(TEST_BUILD_DIR)/html
+
+# Helper targets
 
 clean:
 	@rm -rf $(BUILD_DIR)

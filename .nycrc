@@ -1,6 +1,5 @@
 {
     "exclude": [
-        "script",
         "build/test/ts/**/*.js"
     ],
     "reporter": [
