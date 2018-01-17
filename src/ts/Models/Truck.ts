@@ -1,4 +1,4 @@
-import { ISchema } from 'Model';
+import { ISchema } from 'Models/Model';
 import { IVehicle, Vehicle } from 'Models/Vehicle';
 
 export interface ITruck extends IVehicle {
@@ -24,14 +24,6 @@ export class Truck extends Vehicle<ITruck> {
 
     public getWheels() {
         return this.get('wheels');
-    }
-
-    public getDTO() {
-        return {
-            ...super.getDTO(),
-            capacity: this.get('capacity'),
-            wheels: this.get('wheels')
-        };
     }
 
 }

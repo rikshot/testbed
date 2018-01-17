@@ -280,7 +280,7 @@ export class Mandelbrot {
         });
 
         this._colorScheduler = new Scheduler(Mandelbrot.colorChunk, {
-            'Fractal/Color': ['Color']
+            'Sandbox/Color': ['Color']
         });
 
         if (typeof WebAssembly !== 'undefined') {

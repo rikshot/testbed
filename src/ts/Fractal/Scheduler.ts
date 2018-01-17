@@ -11,7 +11,7 @@ class CallbackContainer {
 }
 
 class TaskWorker extends Worker {
-    public working: boolean;
+    public working: boolean = false;
 }
 
 export interface IModuleMap {
@@ -44,12 +44,12 @@ export class Scheduler<T extends (...parameters: any[]) => ITaskResult | Promis
     constructor(task: T, moduleMap?: IModuleMap) {
         this._moduleMap = moduleMap;
 
-        const task_source = URL.createObjectURL(new Blob([this.getRunner(task)], {
+        const taskSource = URL.createObjectURL(new Blob([this.getRunner(task)], {
             type: 'text/javascript'
         }));
 
         for (let i = 0; i < navigator.hardwareConcurrency; ++i) {
-            const worker = new TaskWorker(task_source);
+            const worker = new TaskWorker(taskSource);
             worker.working = false;
             worker.addEventListener('message', (event: MessageEvent) => this.onMessage(event));
             this._workers.push(worker);

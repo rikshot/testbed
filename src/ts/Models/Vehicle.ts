@@ -1,4 +1,4 @@
-import { ISchema, Model } from 'Model';
+import { ISchema, Model } from 'Models/Model';
 
 export interface IVehicle {
     make: string;
@@ -32,14 +32,6 @@ export abstract class Vehicle<T extends IVehicle> extends Model<T> {
 
     public getFuel() {
         return this.get('fuel');
-    }
-
-    public getDTO() {
-        return {
-            make: this.get('make'),
-            model: this.get('model'),
-            fuel: this.get('fuel')
-        };
     }
 
 }

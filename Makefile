@@ -9,6 +9,9 @@ TSC := $(BIN)/tsc
 TSLINT := $(BIN)/tslint
 MOCHA := $(BIN)/_mocha
 NYC := $(BIN)/nyc
+ROLLUP := $(BIN)/rollup
+CC := java -jar node_modules/google-closure-compiler/compiler.jar
+EM++ := em++
 
 # Directories
 
@@ -25,12 +28,12 @@ TESTS := $(shell find $(TEST_DIR) -type f -not -name '*.d.ts')
 
 # Targets
 
-TARGETS := $(addprefix $(BUILD_DIR)/, $(patsubst %.ts, %.js, $(filter %.ts %.html %.json %.css, $(SOURCES))))
+TARGETS := $(addprefix $(BUILD_DIR)/, $(patsubst %.cpp, %.js, $(patsubst %.ts, %.js, $(filter %.ts %.html %.json %.css %.cpp, $(SOURCES)))))
 TEST_TARGETS := $(addprefix $(BUILD_DIR)/, $(patsubst %.ts, %.js, $(filter %.ts %.html, $(TESTS))))
 
 # Built-in targets
 
-.PHONY: all test test-coverage clean lint setup watch
+.PHONY: all test test-coverage release clean lint setup watch
 .NOTPARALLEL: $(TARGETS) $(TEST_TARGETS)
 
 # Main targets
@@ -43,12 +46,18 @@ test: $(TEST_TARGETS) $(TARGETS)
 test-coverage: $(TEST_TARGETS) $(TARGETS)
 	@NODE_PATH=$(SOURCE_BUILD_DIR):$(SOURCE_BUILD_DIR)/ts:$(TEST_BUILD_DIR)/ts $(NYC) $(MOCHA) --opts .mocha.opts $(TEST_TARGETS)
 
+release: all
+	@$(ROLLUP) --config
+	#@$(CC) $(shell xargs -a .cc.opts) --js $(SOURCE_BUILD_DIR)/ts/Fractal/Bundle.js --js_output_file build/src/ts/Fractal/Bundle.min.js
+	@$(CC) $(shell xargs -a .cc.opts) --js $(SOURCE_BUILD_DIR)/ts/Sandbox/Bundle.js --js_output_file build/src/ts/Sandbox/Bundle.min.js
+
 # VPaths
 
 vpath %.ts $(SOURCE_DIR)/ts $(TEST_DIR)/ts
 vpath %.html $(SOURCE_DIR)/html $(TEST_DIR)/html
 vpath %.json $(SOURCE_DIR)/json
 vpath %.css $(SOURCE_DIR)/css
+vpath %.cpp $(SOURCE_DIR)/cpp
 
 # Implicit rules
 
@@ -64,6 +73,9 @@ $(SOURCE_BUILD_DIR)/json/%.json: %.json
 $(SOURCE_BUILD_DIR)/css/%.css: %.css
 	@mkdir -p $(dir $@) && cp $< $@
 
+$(SOURCE_BUILD_DIR)/cpp/%.js: %.cpp
+	@#mkdir -p $(dir $@) && $(EM++) -std=c++14 -s NO_EXIT_RUNTIME=1 -s WASM=1 -O3 --llvm-lto 3 --closure 1 -o $@ $<
+
 $(TEST_BUILD_DIR)/ts/%.js: %.ts
 	@$(TSC) --project tsconfig.json
 
@@ -75,7 +87,7 @@ $(TEST_BUILD_DIR)/html/%.html: %.html
 
 # Directory rules
 
-$(filter %.js, $(TARGETS)): | $(SOURCE_BUILD_DIR)/ts
+$(filter %.js, $(TARGETS)): | $(SOURCE_BUILD_DIR)/ts $(SOURCE_BUILD_DIR)/cpp
 $(filter %.html, $(TARGETS)): | $(SOURCE_BUILD_DIR)/html
 $(filter %.json, $(TARGERS)): | $(SOURCE_BUILD_DIR)/json
 $(filter %.css, $(TARGETS)): | $(SOURCE_BUILD_DIR)/css

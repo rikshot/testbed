@@ -18,7 +18,9 @@
         "variable-name": [
             true,
             "check-format",
-            "allow-leading-underscore"
+            "allow-leading-underscore",
+            "allow-pascal-case",
+            "allow-snake-case"
         ],
         "no-object-literal-type-assertion": false,
         "max-line-length": [
@@ -30,6 +32,8 @@
         ],
         "prefer-conditional-expression": false,
         "ordered-imports": false,
-        "no-submodule-imports": false
+        "no-submodule-imports": false,
+        "no-implicit-dependencies": false,
+        "ban-comma-operator": false
     }
 }

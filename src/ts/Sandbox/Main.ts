@@ -60,7 +60,7 @@ Simulation.Fetch('http://localhost:8000/build/src/json/default.json').then((simu
                 render();
                 break;
 
-            case " ":
+            case ' ':
                 event.preventDefault();
                 time = Date.now() / 1000;
                 running = !running;

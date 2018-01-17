@@ -110,7 +110,7 @@ export class Simulation {
     private _bounding_boxes: Map<Entity, Rectangle> = new Map();
 
     private _collisions: Map<Entity, Set<Entity>> = new Map();
-    private _islands: Array<Set<[Entity, Entity]>>;
+    private _islands: Array<Set<[Entity, Entity]>> = [];
     private _contacts: Contact[][] = [];
 
     constructor(width: number, height: number) {

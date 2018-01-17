@@ -9,5 +9,8 @@ SystemJS.config({
         'http://localhost:8000/build/src/cpp/mandelbrot.js': {
             format: 'global'
         }
+    },
+    map: {
+        'three': 'http://localhost:8000/node_modules/three/build/three.min.js'
     }
 });

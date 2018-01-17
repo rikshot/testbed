@@ -20,8 +20,6 @@ export abstract class Model<T extends object> {
         }
     }
 
-    public abstract getDTO(): { [key: string]: any };
-
     protected set<K extends keyof T>(key: K, value: T[K]): void {
         if (!(key in this._schema)) {
             throw new Error(this._name + ' - ' + key + ' (' + typeof key + ') is not in: ' + this._schema);
@@ -37,7 +35,7 @@ export abstract class Model<T extends object> {
         return this._data[key];
     }
 
-    private checkValue(value: {}, allowedTypes: SchemaType[]): boolean {
+    private checkValue<K>(value: K, allowedTypes: SchemaType[]): boolean {
         for (const currentType of allowedTypes) {
             if (typeof value === currentType) {
                 return true;
@@ -47,7 +45,6 @@ export abstract class Model<T extends object> {
                 return true;
             }
         }
-
         return false;
     }
 }
