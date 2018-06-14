@@ -5,6 +5,19 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Rust Tests",
+            "program": "cargo",
+            "args": [
+                "test"
+            ],
+            "cwd": "${workspaceRoot}",
+            "sourceLanguages": [
+                "rust"
+            ]
+        },
+        {
             "type": "node",
             "request": "launch",
             "name": "Mocha Tests",

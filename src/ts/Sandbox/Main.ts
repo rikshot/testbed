@@ -10,7 +10,7 @@ import { Shape } from 'Sandbox/Shape';
 const canvas = <HTMLCanvasElement> document.getElementById('sandbox');
 const context = <CanvasRenderingContext2D> canvas.getContext('2d');
 
-Simulation.Fetch('http://localhost:8000/build/src/json/default.json').then((simulation) => {
+Simulation.Fetch('http://localhost:8000/build/src/json/vertex_collision.json').then((simulation) => {
     canvas.width = simulation.width;
     canvas.height = simulation.height;
     context.transform(1, 0, 0, -1, 0, canvas.height);

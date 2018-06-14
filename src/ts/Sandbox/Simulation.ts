@@ -30,13 +30,14 @@ interface IPolygonJSON {
     vertices: IVectorJSON[];
 }
 
-type IShapeJSON = IRectangleJSON |  IPolygonJSON;
+type IShapeJSON = IRectangleJSON | IPolygonJSON;
 
 interface IEntityJSON {
     id: string;
     shape: IShapeJSON;
     material: string;
     position: IVectorJSON;
+    orientation?: number;
     kinematic?: boolean;
 }
 
@@ -59,40 +60,46 @@ export class Simulation {
 
     public static Parse(json_simulation: ISimulationJSON): Simulation {
         const materials: { [key: string]: Material } = {};
-        json_simulation.materials.forEach((material) => {
-            materials[material.id] = new Material(
-                material.density,
-                material.restitution,
+        json_simulation['materials'].forEach((json_material) => {
+            materials[json_material['id']] = new Material(
+                json_material['density'],
+                json_material['restitution'],
                 new Color(
-                    material.color[0],
-                    material.color[1],
-                    material.color[2],
-                    material.color[3]
+                    json_material['color'][0],
+                    json_material['color'][1],
+                    json_material['color'][2],
+                    json_material['color'][3]
                 )
             );
         });
-        const simulation = new Simulation(json_simulation.width, json_simulation.height);
-        json_simulation.entities.forEach((json_entity) => {
+        const simulation = new Simulation(json_simulation['width'], json_simulation['height']);
+        json_simulation['entities'].forEach((json_entity) => {
+            let json_shape = json_entity['shape'];
             const shape = (() => {
-                switch (json_entity.shape.type) {
+                switch (json_shape['type']) {
                     case 'rectangle':
-                        return new Shape(Rectangle.Create(json_entity.shape.width, json_entity.shape.height).vertices);
+                        json_shape = <IRectangleJSON>json_shape;
+                        return new Shape(Rectangle.Create(json_shape['width'], json_shape['height']).vertices);
 
                     case 'polygon':
-                        return new Shape(json_entity.shape.vertices.map((vertex) => new Vector(vertex[0], vertex[1])));
+                        json_shape = <IPolygonJSON>json_shape;
+                        return new Shape(json_shape['vertices'].map((vertex) => new Vector(vertex[0], vertex[1])));
                 }
             })();
             const entity = new Entity(
                 shape,
-                materials[json_entity.material]
+                materials[json_entity['material']]
             );
-            if (json_entity.position) {
+            if (json_entity['position']) {
                 entity.position = new Vector(
-                    json_entity.position[0],
-                    json_entity.position[1]
+                    json_entity['position'][0],
+                    json_entity['position'][1]
                 );
             }
-            if (json_entity.kinematic) {
+            if (json_entity['orientation']) {
+                entity.orientation = json_entity['orientation'];
+            }
+            if (json_entity['kinematic']) {
                 entity.kinematic = true;
             }
             simulation.entities.push(entity);
@@ -381,8 +388,8 @@ export class Simulation {
                 }
             }
 
-            const f: number[] = new Array(n).fill(0);
-            for (let iterations = 0; iterations < 10; ++iterations) {
+            const f = new Array(n).fill(0);
+            for (let iterations = 0; iterations < 3; ++iterations) {
                 for (let i = 0; i < n; ++i) {
                     let q = B[i];
                     for (let j = 0; j < n; ++j) {
@@ -405,16 +412,17 @@ export class Simulation {
                 const normal = contact.normal;
 
                 const force = f[i];
-
-                if (!a.kinematic) {
-                    const ar = contact.ap.sub(a.position);
-                    a.linear_acceleration = a.linear_acceleration.add(normal.mul(force / a.mass));
-                    a.angular_acceleration += ar.cross(normal.mul(force / a.moment));
-                }
-                if (!b.kinematic) {
-                    const br = contact.bp.sub(b.position);
-                    b.linear_acceleration = b.linear_acceleration.sub(normal.mul(force / b.mass));
-                    b.angular_acceleration -= br.cross(normal.mul(force / b.moment));
+                if (!Number.isNaN(force) && Number.isFinite(force)) {
+                    if (!a.kinematic) {
+                        const ar = contact.ap.sub(a.position);
+                        a.linear_acceleration = a.linear_acceleration.add(normal.mul(force / a.mass));
+                        a.angular_acceleration += ar.cross(normal.mul(force / a.moment));
+                    }
+                    if (!b.kinematic) {
+                        const br = contact.bp.sub(b.position);
+                        b.linear_acceleration = b.linear_acceleration.sub(normal.mul(force / b.mass));
+                        b.angular_acceleration -= br.cross(normal.mul(force / b.moment));
+                    }
                 }
             }
         }

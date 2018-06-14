@@ -132,8 +132,8 @@ export class Mandelbrot {
             if (typeof Module === 'undefined') {
                 const Module = (<IModuleWindow> self).Module = {
                     ENVIRONMENT: 'WORKER',
-                    wasmBinaryFile: 'http://localhost:8000/build/src/cpp/mandelbrot.wasm',
-                    _main: () => {
+                    locateFile: (file: string) => 'http://localhost:8000/build/src/cpp/' + file,
+                    onRuntimeInitialized: () => {
                         resolve(Module);
                     }
                 };
@@ -189,8 +189,8 @@ export class Mandelbrot {
             if (typeof Module === 'undefined') {
                 const Module = (<IModuleWindow> self).Module = {
                     ENVIRONMENT: 'WORKER',
-                    wasmBinaryFile: 'http://localhost:8000/build/src/cpp/mandelbrot.wasm',
-                    _main: () => {
+                    locateFile: (file: string) => 'http://localhost:8000/build/src/cpp/' + file,
+                    onRuntimeInitialized: () => {
                         resolve(Module);
                     }
                 };

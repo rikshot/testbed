@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Village Clicker</title>
+        <meta charset="utf-8" />
+        <link type="text/css" rel="stylesheet" href="/build/src/css/main.css" media="screen" />
+        <script src="/node_modules/systemjs/dist/system.js"></script>
+    </head>
+    <body>
+        <script>
+            System.import('/system.config.js').then(() => {
+                System.import('VillageClicker/Main');
+            });
+        </script>
+    </body>
+</html>

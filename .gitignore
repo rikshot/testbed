@@ -3,3 +3,6 @@ build
 coverage
 .idea
 .nyc_output
+**/*.rs.bk
+Cargo.lock
+target

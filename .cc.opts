@@ -1,1 +1,2 @@
 --language_out ECMASCRIPT_2017
+--compilation_level ADVANCED

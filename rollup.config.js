@@ -7,7 +7,8 @@ export default [
         output: {
             name: 'Fractal',
             file: 'build/src/ts/Fractal/Bundle.js',
-            format: 'iife'
+            format: 'iife',
+            interop: false
         },
         plugins: [
             include({
@@ -25,7 +26,8 @@ export default [
         output: {
             name: 'Sandbox',
             file: 'build/src/ts/Sandbox/Bundle.js',
-            format: 'iife'
+            format: 'iife',
+            interop: false
         },
         plugins: [
             include({

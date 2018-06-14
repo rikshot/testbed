@@ -20,7 +20,7 @@ export abstract class Model<T extends object> {
         }
     }
 
-    protected set<K extends keyof T>(key: K, value: T[K]): void {
+    public set<K extends keyof T>(key: K, value: T[K]): void {
         if (!(key in this._schema)) {
             throw new Error(this._name + ' - ' + key + ' (' + typeof key + ') is not in: ' + this._schema);
         }
@@ -31,7 +31,7 @@ export abstract class Model<T extends object> {
         }
     }
 
-    protected get<K extends keyof T>(key: K): T[K] {
+    public get<K extends keyof T>(key: K): T[K] {
         return this._data[key];
     }
 

@@ -41,9 +41,9 @@ const render = (rectangle: Rectangle) => {
     const modeString = modeElement.options[modeElement.selectedIndex].value;
 
     const config = getConfig(rectangle);
-    const startTime = Date.now();
-    mandelbrot.render(RenderMode[modeString.toUpperCase() as keyof typeof RenderMode], config).then(() => {
-        const duration = Date.now() - startTime;
+    const startTime = performance.now();
+    return mandelbrot.render(RenderMode[modeString.toUpperCase() as keyof typeof RenderMode], config).then(() => {
+        const duration = performance.now() - startTime;
         console.log('Rendering took ' + duration + 'ms.');
     });
 };
@@ -117,6 +117,23 @@ const renderButton = <HTMLButtonElement> document.getElementById('render');
 renderButton.addEventListener('click', (event: Event) => {
     event.stopPropagation();
     render(rectangle);
+});
+
+const benchmarkButton = <HTMLButtonElement> document.getElementById('benchmark');
+benchmarkButton.addEventListener('click', (event: Event) => {
+    event.stopPropagation();
+    let average = 0;
+    const iterate = (n: number): Promise<any> => {
+        if (n === 10) {
+            return Promise.resolve();
+        }
+        const start = performance.now();
+        return render(rectangle).then(() => {
+            average = ((performance.now() - start) + n * average) / (n + 1);
+            return iterate(n + 1);
+        });
+    };
+    iterate(0).then(() => console.log('Average: ' + average + 'ms.'));
 });
 
 const resetButton = <HTMLButtonElement> document.getElementById('reset');

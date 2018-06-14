@@ -3,30 +3,45 @@
     <head>
         <title>Mandelbrot</title>
         <meta charset="utf-8" />
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous" />
         <link type="text/css" rel="stylesheet" href="/build/src/css/main.css" media="screen" />
         <script src="/node_modules/systemjs/dist/system.js"></script>
     </head>
     <body>
         <canvas id="fractal" width="1920" height="1080"></canvas>
         <canvas id="selection" width="1920" height="1080"></canvas>
-        <div id="controls">
-            <label for="iterations">Iterations: </label>
-            <input id="iterations" name="iterations" type="text" value="1000" size="5" maxlength="10"/>
-            <label for="red">Red: </label>
-            <input id="red" name="red" type="text" value="10" size="5" maxlength="5"/>
-            <label for="green">Green: </label>
-            <input id="green" name="green" type="text" value="15" size="5" maxlength="5"/>
-            <label for="blue">Blue: </label>
-            <input id="blue" name="blue" type="text" value="0.5" size="5" maxlength="5"/>
-            <br />
-            <label for="mode">Mode: </label>
-            <select id="mode">
-                <option value="transferred">Transferred</option>
-                <option value="shared">Shared</option>
-                <option value="wasm">WASM</option>
-            </select>
-            <input id="render" name="render" type="button" value="Render"/>
-            <input id="reset" name="reset" type="button" value="Reset"/>
+        <div id="controls" class="container">
+            <div class="row"><div class="col">
+            <form>
+                <div class="form-group">
+                    <label for="iterations">Iterations: </label>
+                    <input id="iterations" class="form-control" name="iterations" type="text" value="1000" size="5" maxlength="5"/>
+                </div>
+                <div class="form-group">
+                    <label for="red">Red: </label>
+                    <input id="red" class="form-control" name="red" type="text" value="10" size="5" maxlength="5"/>
+                </div>
+                <div class="form-group">
+                    <label for="green">Green: </label>
+                    <input id="green" class="form-control" name="green" type="text" value="15" size="5" maxlength="5"/>
+                </div>
+                <div class="form-group">
+                    <label for="blue">Blue: </label>
+                    <input id="blue" class="form-control" name="blue" type="text" value="0.5" size="5" maxlength="5"/>
+                </div>
+                <div class="form-group">
+                    <label for="mode">Mode: </label>
+                    <select id="mode" class="form-control">
+                        <option value="transferred">Transferred</option>
+                        <option value="shared">Shared</option>
+                        <option value="wasm">WASM</option>
+                    </select>
+                </div>
+                <button id="render" class="btn btn-sm btn-block btn-primary" name="render" type="button">Render</button>
+                <button id="benchmark" class="btn btn-sm btn-block btn-secondary" name="benchmark" type="button">Benchmark</button>
+                <button id="reset" class="btn btn-sm btn-block btn-secondary" name="reset" type="button">Reset</button>
+            </form>
+            </div></div>
         </div>
         <script>
             System.import('/system.config.js').then(() => {

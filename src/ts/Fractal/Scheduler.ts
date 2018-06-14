@@ -1,9 +1,9 @@
-class CallbackContainer {
+class CallbackContainer<T> {
 
-    public resolve: any;
-    public reject: any;
+    public readonly resolve: (value?: T | PromiseLike<T>) => void;
+    public readonly reject: (reason?: any) => void;
 
-    constructor(resolve: any, reject: any) {
+    constructor(resolve: (value?: T | PromiseLike<T>) => void, reject: (reason?: any) => void) {
         this.resolve = resolve;
         this.reject = reject;
     }
@@ -37,7 +37,7 @@ export class Scheduler<T extends (...parameters: any[]) => ITaskResult | Promis
     private _workers: TaskWorker[] = [];
 
     private _taskId = 0;
-    private _tasks: { [key: number]: CallbackContainer } = {};
+    private _tasks: { [key: number]: CallbackContainer<any> } = {};
 
     private _queue: IQueuedTask[] = [];
 
