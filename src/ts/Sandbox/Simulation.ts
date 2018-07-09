@@ -78,11 +78,11 @@ export class Simulation {
             const shape = (() => {
                 switch (json_shape['type']) {
                     case 'rectangle':
-                        json_shape = <IRectangleJSON>json_shape;
+                        json_shape = <IRectangleJSON> json_shape;
                         return new Shape(Rectangle.Create(json_shape['width'], json_shape['height']).vertices);
 
                     case 'polygon':
-                        json_shape = <IPolygonJSON>json_shape;
+                        json_shape = <IPolygonJSON> json_shape;
                         return new Shape(json_shape['vertices'].map((vertex) => new Vector(vertex[0], vertex[1])));
                 }
             })();
@@ -96,11 +96,13 @@ export class Simulation {
                     json_entity['position'][1]
                 );
             }
-            if (json_entity['orientation']) {
-                entity.orientation = json_entity['orientation'];
+            const orientation = json_entity['orientation'];
+            if (typeof orientation === 'number') {
+                entity.orientation = orientation;
             }
-            if (json_entity['kinematic']) {
-                entity.kinematic = true;
+            const kinematic = json_entity['kinematic'];
+            if (typeof kinematic === 'boolean') {
+                entity.kinematic = kinematic;
             }
             simulation.entities.push(entity);
         });
@@ -428,7 +430,7 @@ export class Simulation {
         }
     }
 
-    private resolve_forces(n: number, A: number[][], B: number[]): number[] {
+    /*private resolve_forces(n: number, A: number[][], B: number[]): number[] {
         const f = new Array(n).fill(0);
         const a = B.slice();
         const C = new Array(n).fill(false);
@@ -618,7 +620,7 @@ export class Simulation {
         }
 
         return f;
-    }
+    }*/
 
     private evaluate(initial: Entity, time_step: number, derivative: [Vector, Vector, number, number]): [Vector, Vector, number, number] {
         return [

@@ -2,8 +2,8 @@ import * as THREE from 'three';
 
 const scene = new THREE.Scene();
 
-const aspect = window.innerWidth / window.innerHeight;
-const d = 5;
+let aspect = window.innerWidth / window.innerHeight;
+const d = 10;
 
 const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
 camera.position.set(20, 20, 20);
@@ -49,6 +49,10 @@ const render = () => {
 render();
 
 window.addEventListener('resize', (event: Event) => {
+    aspect = window.innerWidth / window.innerHeight;
+    camera.left = -d * aspect;
+    camera.right = d * aspect;
+    camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.render(scene, camera);
 });

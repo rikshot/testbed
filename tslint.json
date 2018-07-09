@@ -34,6 +34,7 @@
         "ordered-imports": false,
         "no-submodule-imports": false,
         "no-implicit-dependencies": false,
-        "ban-comma-operator": false
+        "ban-comma-operator": false,
+        "no-string-literal": false
     }
 }
