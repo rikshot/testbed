@@ -1,13 +1,13 @@
-import 'mocha';
-import { assert } from 'chai';
+import * as tape from 'tape';
 
 import { View } from 'View/View';
 
-describe('View', () => {
+tape('View', (t) => {
 
-    it('should construct', () => {
+    t.test('should construct', (st) => {
         const view = new View();
-        assert(view);
+        st.ok(view);
+        st.end();
     });
 
 });

@@ -1,50 +1,55 @@
-import { assert } from 'chai';
-import 'mocha';
+import * as tape from 'tape';
 
 import { Car } from 'Models/Car';
 
-describe('Model', () => {
+tape('Model', (t) => {
 
-    it('should construct', () => {
+    t.test('should construct', (st) => {
         const car = new Car({
             make: 'Volvo',
             model: 'V70',
             fuel: 0,
             seats: 4
         });
-        assert.equal(car.getMake(), 'Volvo');
-        assert.equal(car.getModel(), 'V70');
-        assert.equal(car.getFuel(), 0);
-        assert.equal(car.getSeats(), 4);
+        st.equal(car.name, 'Car');
+        st.equal(car.getMake(), 'Volvo');
+        st.equal(car.getModel(), 'V70');
+        st.equal(car.getFuel(), 0);
+        st.equal(car.getSeats(), 4);
+        st.end();
     });
 
-    it('should construct from JSON', () => {
+    t.test('should construct from JSON', (st) => {
         const json = '{"make":"Volvo","model":"V70","fuel":0,"seats":4}';
         const car = new Car(JSON.parse(json));
-        assert.equal(car.getMake(), 'Volvo');
-        assert.equal(car.getModel(), 'V70');
-        assert.equal(car.getFuel(), 0);
-        assert.equal(car.getSeats(), 4);
+        st.equal(car.getMake(), 'Volvo');
+        st.equal(car.getModel(), 'V70');
+        st.equal(car.getFuel(), 0);
+        st.equal(car.getSeats(), 4);
+        st.end();
     });
 
-    it('should not construct from invalid JSON', () => {
+    t.test('should not construct from invalid JSON', (st) => {
         const json = '{"make":"Volvo","model":"V70","fuel":"400","seats":4}';
-        assert.throws(() => {
+        st.throws(() => {
             const car = new Car(JSON.parse(json));
         });
+        st.end();
     });
 
-    it('should pass valid set', () => {
+    t.test('should pass valid set', (st) => {
         const car = new Car({seats: 4, make: 'Toyota', model: 'Celica', fuel: 0});
         car.setMake('Subaru');
-        assert.equal(car.getMake(), 'Subaru');
+        st.equal(car.getMake(), 'Subaru');
+        st.end();
     });
 
-    it('should not pass invalid set', () => {
+    t.test('should not pass invalid set', (st) => {
         const car = new Car({seats: 4, make: 'Toyota', model: 'Celica', fuel: 0});
-        assert.throws(() => {
+        st.throws(() => {
             car.setMake(4 as any);
         });
+        st.end();
     });
 
 });

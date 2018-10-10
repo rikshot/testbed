@@ -14,10 +14,6 @@ export abstract class Vehicle<T extends IVehicle> extends Model<T> {
         fuel: ['number']
     };
 
-    constructor(name: string, data: T, schema: ISchema<T>) {
-        super(name, data, schema);
-    }
-
     public getMake() {
         return this.get('make');
     }

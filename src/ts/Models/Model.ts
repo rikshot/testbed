@@ -4,30 +4,35 @@ export type ISchema<T extends object> = {
     [P in keyof T]: SchemaType[];
 };
 
-export abstract class Model<T extends object> {
-    private readonly _name: string;
+export class Model<T extends object> {
+    public readonly name: string;
+
     private _data: T;
     private readonly _schema: ISchema<T>;
 
-    constructor(name: string, data: T, schema: ISchema<T>) {
-        this._name = name;
+    constructor(data: T, schema: ISchema<T>) {
+        this.name = this.constructor.name;
         this._data = {} as T;
         this._schema = schema;
-        for (const key in data) {
-            if (data.hasOwnProperty(key)) {
-                this.set(key, data[key]);
-            }
-        }
+        this.setAll(data);
     }
 
     public set<K extends keyof T>(key: K, value: T[K]): void {
         if (!(key in this._schema)) {
-            throw new Error(this._name + ' - ' + key + ' (' + typeof key + ') is not in: ' + this._schema);
+            throw new Error(this.name + ' - ' + key + ' (' + typeof key + ') is not in: ' + this._schema);
         }
         if (this.checkValue(value, this._schema[key])) {
             this._data[key] = value;
         } else {
-            throw new Error(this._name + ' - ' + value + ' (' + typeof value + ') is not in: ' + this._schema[key]);
+            throw new Error(this.name + ' - ' + value + ' (' + typeof value + ') is not in: ' + this._schema[key]);
+        }
+    }
+
+    public setAll(data: T) {
+        for (const key in data) {
+            if (data.hasOwnProperty(key)) {
+                this.set(key, data[key]);
+            }
         }
     }
 

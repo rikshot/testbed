@@ -1,21 +1,13 @@
-import 'mocha';
-import { assert } from 'chai';
+import * as tape from 'tape';
 
 import { Simulation } from 'Sandbox/Simulation';
-import { Vector } from 'Sandbox/Vector';
-import { Shape } from 'Sandbox/Shape';
-import { Color } from 'Sandbox/Color';
-import { Material } from 'Sandbox/Material';
-import { Rectangle } from 'Sandbox/Rectangle';
-import { Entity } from 'Sandbox/Entity';
 
-import DefaultSimulation from 'json/default.json';
+tape('Simulation', (t) => {
 
-describe('Simulation', () => {
-
-    it('should construct', () => {
+    t.test('should construct', (st) => {
         const simulation = new Simulation(1, 1);
-        assert(simulation);
+        st.ok(simulation);
+        st.end();
     });
 
 });

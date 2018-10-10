@@ -1,4 +1,0 @@
---full-trace
---check-leaks
---use_strict
---require script/text-require

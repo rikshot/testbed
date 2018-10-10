@@ -27,9 +27,7 @@
             false
         ],
         "no-angle-bracket-type-assertion": false,
-        "max-classes-per-file": [
-            false
-        ],
+        "max-classes-per-file": false,
         "prefer-conditional-expression": false,
         "ordered-imports": false,
         "no-submodule-imports": false,

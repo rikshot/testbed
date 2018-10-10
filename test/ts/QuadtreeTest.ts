@@ -1,53 +1,58 @@
-import 'mocha';
-import { assert } from 'chai';
+import * as tape from 'tape';
 
 import { Vector } from 'Sandbox/Vector';
 import { Rectangle } from 'Sandbox/Rectangle';
 import { Quadtree } from 'Sandbox/Quadtree';
 
-describe('Quadtree', () => {
+tape('Quadtree', (t) => {
 
-    it('should construct', () => {
+    t.test('should construct', (st) => {
         const quadtree = new Quadtree(Rectangle.Create(1, 1));
-        assert(quadtree);
-        assert.deepEqual(quadtree.rectangle, Rectangle.Create(1, 1));
+        st.ok(quadtree);
+        st.deepEqual(quadtree.rectangle, Rectangle.Create(1, 1));
+        st.end();
     });
 
-    it('should insert', () => {
+    t.test('should insert', (st) => {
         const quadtree = new Quadtree<number>(Rectangle.Create(10, 10));
-        assert(quadtree.insert(1, Rectangle.Create(5, 5)));
-        assert.equal(quadtree.count, 1);
+        st.ok(quadtree.insert(1, Rectangle.Create(5, 5)));
+        st.equal(quadtree.count, 1);
+        st.end();
     });
 
-    it('should not insert non-overlapping', () => {
+    t.test('should not insert non-overlapping', (st) => {
         const quadtree = new Quadtree<number>(Rectangle.Create(10, 10));
-        assert(!quadtree.insert(1, Rectangle.Create(10, 10, new Vector(20, 20))));
-        assert.equal(quadtree.count, 0);
+        st.ok(!quadtree.insert(1, Rectangle.Create(10, 10, new Vector(20, 20))));
+        st.equal(quadtree.count, 0);
+        st.end();
     });
 
-    it('should subdivide', () => {
+    t.test('should subdivide', (st) => {
         const quadtree = new Quadtree<number>(Rectangle.Create(20, 20, new Vector(10, 10)));
-        assert(quadtree.insert(1, Rectangle.Create(5, 5, new Vector(5, 5))));
-        assert(quadtree.insert(2, Rectangle.Create(5, 5, new Vector(15, 5))));
-        assert(quadtree.insert(3, Rectangle.Create(5, 5, new Vector(5, 15))));
-        assert(quadtree.insert(4, Rectangle.Create(5, 5, new Vector(15, 15))));
-        assert.equal(quadtree.count, 4);
-        assert(quadtree.insert(5, Rectangle.Create(5, 5, new Vector(10, 10))));
-        assert.equal(quadtree.count, 8);
+        st.ok(quadtree.insert(1, Rectangle.Create(5, 5, new Vector(5, 5))));
+        st.ok(quadtree.insert(2, Rectangle.Create(5, 5, new Vector(15, 5))));
+        st.ok(quadtree.insert(3, Rectangle.Create(5, 5, new Vector(5, 15))));
+        st.ok(quadtree.insert(4, Rectangle.Create(5, 5, new Vector(15, 15))));
+        st.equal(quadtree.count, 4);
+        st.ok(quadtree.insert(5, Rectangle.Create(5, 5, new Vector(10, 10))));
+        st.equal(quadtree.count, 8);
+        st.end();
     });
 
-    it('should find overlapping', () => {
+    t.test('should find overlapping', (st) => {
         const quadtree = new Quadtree<number>(Rectangle.Create(10, 10));
-        assert(quadtree.insert(1, Rectangle.Create(5, 5)));
+        st.ok(quadtree.insert(1, Rectangle.Create(5, 5)));
         const objects = quadtree.find(Rectangle.Create(5, 5, new Vector(2.5, 2.5)));
-        assert.deepEqual(objects, [1]);
+        st.deepEqual(objects, [1]);
+        st.end();
     });
 
-    it('should not find non-overlapping', () => {
+    t.test('should not find non-overlapping', (st) => {
         const quadtree = new Quadtree<number>(Rectangle.Create(10, 10));
-        assert(quadtree.insert(1, Rectangle.Create(5, 5)));
+        st.ok(quadtree.insert(1, Rectangle.Create(5, 5)));
         const objects = quadtree.find(Rectangle.Create(2.5, 2.5, new Vector(7.5, 7.5)));
-        assert.deepEqual(objects, []);
+        st.deepEqual(objects, []);
+        st.end();
     });
 
 });

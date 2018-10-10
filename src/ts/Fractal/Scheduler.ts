@@ -1,9 +1,11 @@
+type ResolveType<T> = (value?: T | PromiseLike<T>) => void;
+type RejectType = (reason?: any) => void;
 class CallbackContainer<T> {
 
-    public readonly resolve: (value?: T | PromiseLike<T>) => void;
-    public readonly reject: (reason?: any) => void;
+    public readonly resolve: ResolveType<T>;
+    public readonly reject: RejectType;
 
-    constructor(resolve: (value?: T | PromiseLike<T>) => void, reject: (reason?: any) => void) {
+    constructor(resolve: ResolveType<T>, reject: RejectType) {
         this.resolve = resolve;
         this.reject = reject;
     }
@@ -66,7 +68,7 @@ export class Scheduler<T extends (...parameters: any[]) => ITaskResult | Promis
         return `
             importScripts('http://localhost:8000/node_modules/systemjs/dist/system.js', 'http://localhost:8000/system.config.js');
             Promise.all(${ JSON.stringify(Object.keys(this._moduleMap ? this._moduleMap : {})) }.map((requirement) => System.import(requirement))).then(imports => { (self => {
-                self.onmessage = (event) => {
+             self.onmessage = (event) => {
                     const [taskId, parameters, moduleMap] = event.data;
                     for(const module in moduleMap) {
                         if(moduleMap.hasOwnProperty(module)) {

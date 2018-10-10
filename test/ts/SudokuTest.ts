@@ -1,55 +1,62 @@
-import { assert } from 'chai';
-import 'mocha';
+import * as tape from 'tape';
 
 import { Candidates } from 'Sudoku/Candidates';
 import { Grid } from 'Sudoku/Grid';
 
-describe('Sudoku', () => {
+tape('Sudoku', (t) => {
 
-    describe('Candidates', () => {
+    t.test('Candidates', (st) => {
 
         const candidates = new Candidates();
 
-        it('should be full', () => {
-            assert.equal(candidates.some(), true);
-            assert.equal(candidates.get(), 512);
+        t.test('should be full', (st) => {
+            st.equal(candidates.some(), true);
+            st.equal(candidates.get(), 512);
+            st.end();
         });
 
-        it('should be empty', () => {
+        t.test('should be empty', (st) => {
             candidates.unset();
-            assert.equal(candidates.some(), false);
-            assert.equal(candidates.get(3), false);
+            st.equal(candidates.some(), false);
+            st.equal(candidates.get(3), false);
+            st.end();
         });
 
-        it('should set', () => {
+        t.test('should set', (st) => {
             candidates.set(3);
-            assert.equal(candidates.some(), true);
-            assert.equal(candidates.get(3), true);
+            st.equal(candidates.some(), true);
+            st.equal(candidates.get(3), true);
+            st.end();
         });
 
-        it('should unset', () => {
+        t.test('should unset', (st) => {
             candidates.unset(3);
-            assert.equal(candidates.some(), false);
-            assert.equal(candidates.get(3), false);
+            st.equal(candidates.some(), false);
+            st.equal(candidates.get(3), false);
+            st.end();
         });
 
+        st.end();
     });
 
-    it('should construct', () => {
+    t.test('should construct', (st) => {
         const sudoku = new Grid();
-        assert(sudoku);
+        st.ok(sudoku);
+        st.end();
     });
 
-    it('should construct empty', () => {
+    t.test('should construct empty', (st) => {
         const sudoku = new Grid('000000000000000000000000000000000000000000000000000000000000000000000000000000000');
-        assert(sudoku.valid());
-        assert(!sudoku.complete());
+        st.ok(sudoku.valid());
+        st.ok(!sudoku.complete());
+        st.end();
     });
 
-    it('should validate', () => {
+    t.test('should validate', (st) => {
         const sudoku = new Grid('060000300400700000000000080000008012500600000000000050082000700000500600000010000');
-        assert(sudoku.valid());
-        assert(!sudoku.complete());
+        st.ok(sudoku.valid());
+        st.ok(!sudoku.complete());
+        st.end();
     });
 
 });

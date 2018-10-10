@@ -1,4 +1,4 @@
-import * as THREE from 'three';
+/*import * as THREE from 'three';
 
 const scene = new THREE.Scene();
 
@@ -55,4 +55,4 @@ window.addEventListener('resize', (event: Event) => {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.render(scene, camera);
-});
+});*/

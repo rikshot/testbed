@@ -1,67 +1,75 @@
-import 'mocha';
-import { assert } from 'chai';
+import * as tape from 'tape';
 
 import { Vector } from 'Sandbox/Vector';
 import { Rectangle } from 'Sandbox/Rectangle';
 import { Shape } from 'Sandbox/Shape';
 
-describe('Shape', () => {
+tape('Shape', (t) => {
 
-    it('should construct', () => {
+    t.test('should construct', (st) => {
         const shape = new Shape([]);
-        assert(shape);
+        st.ok(shape);
+        st.end();
     });
 
-    it('should get correct area', () => {
+    t.test('should get correct area', (st) => {
         const shape = new Shape(Rectangle.Create(10, 10).vertices);
-        assert.equal(shape.area(), 100);
+        st.equal(shape.area(), 100);
+        st.end();
     });
 
-    it('should get correct centroid', () => {
+    t.test('should get correct centroid', (st) => {
         const shape = new Shape(Rectangle.Create(10, 10, new Vector(5, 5)).vertices);
-        assert.deepEqual(shape.centroid(), new Vector(5, 5));
+        st.deepEqual(shape.centroid(), new Vector(5, 5));
+        st.end();
     });
 
-    it('should get correct bounding box', () => {
+    t.test('should get correct bounding box', (st) => {
         const shape = new Shape([
             new Vector(0, 0),
             new Vector(10, 10),
             new Vector(0, 10)
         ]);
-        assert.deepEqual(shape.bounding_box(), new Rectangle(new Vector(0, 0), new Vector(10, 10)));
+        st.deepEqual(shape.bounding_box(), new Rectangle(new Vector(0, 0), new Vector(10, 10)));
+        st.end();
     });
 
-    it('should intersect overlapping', () => {
+    t.test('should intersect overlapping', (st) => {
         const shape1 = new Shape(Rectangle.Create(10, 10).vertices);
         const shape2 = new Shape(Rectangle.Create(10, 10, new Vector(5, 5)).vertices);
-        assert(shape1.intersects(shape2));
+        st.ok(shape1.intersects(shape2));
+        st.end();
     });
 
-    it('should not intersect non-overlapping', () => {
+    t.test('should not intersect non-overlapping', (st) => {
         const shape1 = new Shape(Rectangle.Create(10, 10).vertices);
         const shape2 = new Shape(Rectangle.Create(10, 10, new Vector(15, 15)).vertices);
-        assert(!shape1.intersects(shape2));
+        st.ok(!shape1.intersects(shape2));
+        st.end();
     });
 
-    it('should get distance', () => {
+    t.test('should get distance', (st) => {
         const shape1 = new Shape(Rectangle.Create(10, 10).vertices);
         const shape2 = new Shape(Rectangle.Create(10, 10).vertices).transform(new Vector(20, 0), 0);
         const distance = shape1.distance(shape2);
-        assert.equal(distance.distance, 10);
+        st.equal(distance.distance, 10);
+        st.end();
     });
 
-    it('should not get distance when overlapping', () => {
+    t.test('should not get distance when overlapping', (st) => {
         const shape1 = new Shape(Rectangle.Create(10, 10).vertices);
         const shape2 = new Shape(Rectangle.Create(10, 10).vertices).transform(new Vector(7.5, 0), 0);
         const distance = shape1.distance(shape2);
-        assert.equal(distance.intersects, false);
+        st.equal(distance.intersects, false);
+        st.end();
     });
 
-    it('should get circle distance', () => {
+    t.test('should get circle distance', (st) => {
         const shape1 = Shape.Circle(10, 10);
         const shape2 = Shape.Circle(10, 10).transform(new Vector(20, 20), 0);
         const distance = shape1.distance(shape2);
-        assert.equal(distance.distance, 8.91491460744534);
+        st.equal(distance.distance, 8.91491460744534);
+        st.end();
     });
 
 });

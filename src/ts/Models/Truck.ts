@@ -15,7 +15,7 @@ export class Truck extends Vehicle<ITruck> {
     };
 
     constructor(data: ITruck) {
-        super('Truck', data, Truck.Schema);
+        super(data, Truck.Schema);
     }
 
     public getCapacity() {

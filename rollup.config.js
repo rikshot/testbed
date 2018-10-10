@@ -19,7 +19,11 @@ export default [
             commonjs({
                 sourceMap: false
             })
-        ]
+        ],
+        watch: {
+            clearScreen: false,
+            include: 'build/src/ts/Fractal/**'
+        }
     },
     {
         input: 'build/src/ts/Sandbox/Main.js',

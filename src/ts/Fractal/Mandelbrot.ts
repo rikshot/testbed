@@ -131,7 +131,6 @@ export class Mandelbrot {
         return new Promise((resolve, reject) => {
             if (typeof Module === 'undefined') {
                 const Module = (<IModuleWindow> self).Module = {
-                    ENVIRONMENT: 'WORKER',
                     locateFile: (file: string) => 'http://localhost:8000/build/src/cpp/' + file,
                     onRuntimeInitialized: () => {
                         resolve(Module);
@@ -188,7 +187,6 @@ export class Mandelbrot {
         return new Promise((resolve, reject) => {
             if (typeof Module === 'undefined') {
                 const Module = (<IModuleWindow> self).Module = {
-                    ENVIRONMENT: 'WORKER',
                     locateFile: (file: string) => 'http://localhost:8000/build/src/cpp/' + file,
                     onRuntimeInitialized: () => {
                         resolve(Module);

@@ -7,7 +7,8 @@ MAKEFLAGS += -rR
 BIN := node_modules/.bin
 TSC := $(BIN)/tsc
 TSLINT := $(BIN)/tslint
-MOCHA := $(BIN)/_mocha
+TAPE := $(BIN)/tape
+TAP_SPEC := $(BIN)/tap-spec
 NYC := $(BIN)/nyc
 ROLLUP := $(BIN)/rollup
 CC := java -jar node_modules/google-closure-compiler/compiler.jar
@@ -46,10 +47,10 @@ TEST_TARGETS := $(addprefix $(BUILD_DIR)/, $(patsubst %.ts, %.js, $(filter %.ts 
 all: $(TARGETS)
 
 test: $(TEST_TARGETS) $(TARGETS)
-	@NODE_PATH=$(SOURCE_BUILD_DIR):$(SOURCE_BUILD_DIR)/ts:$(TEST_BUILD_DIR)/ts $(MOCHA) --opts .mocha.opts $(TEST_TARGETS)
+	@NODE_PATH=$(SOURCE_BUILD_DIR):$(SOURCE_BUILD_DIR)/ts:$(TEST_BUILD_DIR)/ts $(TAPE) -r ./script/text-require $(TEST_TARGETS) | $(TAP_SPEC)
 
 test-coverage: $(TEST_TARGETS) $(TARGETS)
-	@NODE_PATH=$(SOURCE_BUILD_DIR):$(SOURCE_BUILD_DIR)/ts:$(TEST_BUILD_DIR)/ts $(NYC) $(MOCHA) --opts .mocha.opts $(TEST_TARGETS)
+	@NODE_PATH=$(SOURCE_BUILD_DIR):$(SOURCE_BUILD_DIR)/ts:$(TEST_BUILD_DIR)/ts $(NYC) $(TAPE) -r ./script/text-require $(TEST_TARGETS)
 
 release: all
 	@$(ROLLUP) --config
@@ -118,5 +119,7 @@ setup: clean
 	@rm -rf node_modules
 	@npm install
 
-watch:
-	@$(TSC) --project tsconfig.json --watch
+watch: all
+	parallel --ungroup --tty --jobs 0 ::: \
+		'$(TSC) --project tsconfig.json --watch --preserveWatchOutput' \
+		'$(ROLLUP) --config rollup.config.fractal.js --watch'
