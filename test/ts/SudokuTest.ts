@@ -9,31 +9,31 @@ tape('Sudoku', (t) => {
 
         const candidates = new Candidates();
 
-        t.test('should be full', (st) => {
-            st.equal(candidates.some(), true);
-            st.equal(candidates.get(), 512);
-            st.end();
+        t.test('should be full', (sst) => {
+            sst.equal(candidates.some(), true);
+            sst.equal(candidates.get(), 512);
+            sst.end();
         });
 
-        t.test('should be empty', (st) => {
+        t.test('should be empty', (sst) => {
             candidates.unset();
-            st.equal(candidates.some(), false);
-            st.equal(candidates.get(3), false);
-            st.end();
+            sst.equal(candidates.some(), false);
+            sst.equal(candidates.get(3), false);
+            sst.end();
         });
 
-        t.test('should set', (st) => {
+        t.test('should set', (sst) => {
             candidates.set(3);
-            st.equal(candidates.some(), true);
-            st.equal(candidates.get(3), true);
-            st.end();
+            sst.equal(candidates.some(), true);
+            sst.equal(candidates.get(3), true);
+            sst.end();
         });
 
-        t.test('should unset', (st) => {
+        t.test('should unset', (sst) => {
             candidates.unset(3);
-            st.equal(candidates.some(), false);
-            st.equal(candidates.get(3), false);
-            st.end();
+            sst.equal(candidates.some(), false);
+            sst.equal(candidates.get(3), false);
+            sst.end();
         });
 
         st.end();
