@@ -1,4 +1,4 @@
-import { Vector, IVector } from 'Sandbox/Vector';
+import { Vector, IVector } from 'Sandbox/Vector.js';
 
 export interface IRectangle {
     start: IVector;

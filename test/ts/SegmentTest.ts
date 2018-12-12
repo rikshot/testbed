@@ -1,7 +1,7 @@
 import * as tape from 'tape';
 
-import { Vector } from 'Sandbox/Vector';
-import { Segment } from 'Sandbox/Segment';
+import { Vector } from 'Sandbox/Vector.js';
+import { Segment } from 'Sandbox/Segment.js';
 
 tape('Segment', (t) => {
 

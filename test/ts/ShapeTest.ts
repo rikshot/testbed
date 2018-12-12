@@ -1,8 +1,8 @@
 import * as tape from 'tape';
 
-import { Vector } from 'Sandbox/Vector';
-import { Rectangle } from 'Sandbox/Rectangle';
-import { Shape } from 'Sandbox/Shape';
+import { Vector } from 'Sandbox/Vector.js';
+import { Rectangle } from 'Sandbox/Rectangle.js';
+import { Shape } from 'Sandbox/Shape.js';
 
 tape('Shape', (t) => {
 

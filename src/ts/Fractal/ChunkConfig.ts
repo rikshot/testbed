@@ -1,4 +1,4 @@
-import { Rectangle, IRectangle } from 'Sandbox/Rectangle';
+import { Rectangle, IRectangle } from 'Sandbox/Rectangle.js';
 
 export interface IBuffers {
     histogram: Uint32Array;

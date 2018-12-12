@@ -1,4 +1,4 @@
-import { Color } from 'Sandbox/Color';
+import { Color } from 'Sandbox/Color.js';
 
 export class Material {
 

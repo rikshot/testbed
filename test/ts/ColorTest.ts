@@ -1,6 +1,6 @@
 import * as tape from 'tape';
 
-import { Color } from 'Sandbox/Color';
+import { Color } from 'Sandbox/Color.js';
 
 tape('Color', (t) => {
 

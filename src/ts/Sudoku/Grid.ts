@@ -1,4 +1,4 @@
-import { Cell } from 'Sudoku/Cell';
+import { Cell } from 'Sudoku/Cell.js';
 
 export class Grid {
 

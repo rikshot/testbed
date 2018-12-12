@@ -1,12 +1,12 @@
-import { Color } from 'Sandbox/Color';
-import { Material } from 'Sandbox/Material';
-import { Segment } from 'Sandbox/Segment';
-import { Rectangle } from 'Sandbox/Rectangle';
-import { Entity } from 'Sandbox/Entity';
-import { Quadtree } from 'Sandbox/Quadtree';
-import { Contact } from 'Sandbox/Contact';
-import { Shape } from 'Sandbox/Shape';
-import { Vector } from 'Sandbox/Vector';
+import { Color } from 'Sandbox/Color.js';
+import { Material } from 'Sandbox/Material.js';
+import { Segment } from 'Sandbox/Segment.js';
+import { Rectangle } from 'Sandbox/Rectangle.js';
+import { Entity } from 'Sandbox/Entity.js';
+import { Quadtree } from 'Sandbox/Quadtree.js';
+import { Contact } from 'Sandbox/Contact.js';
+import { Shape } from 'Sandbox/Shape.js';
+import { Vector } from 'Sandbox/Vector.js';
 
 type IColorJSON = [number, number, number, number];
 

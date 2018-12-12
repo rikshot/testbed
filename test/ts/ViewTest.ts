@@ -1,6 +1,6 @@
 import * as tape from 'tape';
 
-import { View } from 'View/View';
+import { View } from 'View/View.js';
 
 tape('View', (t) => {
 

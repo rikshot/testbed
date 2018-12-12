@@ -66,7 +66,7 @@ export class Scheduler<T extends (...parameters: any[]) => ITaskResult | Promis
         let task_source = task.toString();
         task_source = task_source.substr(task_source.indexOf('(')).replace(/\{/, '=> {');
         return `
-            importScripts('http://localhost:8000/node_modules/systemjs/dist/system.js', 'http://localhost:8000/system.config.js');
+            importScripts('http://localhost:8000/node_modules/systemjs/dist/system.min.js');
             Promise.all(${ JSON.stringify(Object.keys(this._moduleMap ? this._moduleMap : {})) }.map((requirement) => System.import(requirement))).then(imports => { (self => {
              self.onmessage = (event) => {
                     const [taskId, parameters, moduleMap] = event.data;

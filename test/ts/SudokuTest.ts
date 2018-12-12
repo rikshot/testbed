@@ -1,7 +1,7 @@
 import * as tape from 'tape';
 
-import { Candidates } from 'Sudoku/Candidates';
-import { Grid } from 'Sudoku/Grid';
+import { Candidates } from 'Sudoku/Candidates.js';
+import { Grid } from 'Sudoku/Grid.js';
 
 tape('Sudoku', (t) => {
 

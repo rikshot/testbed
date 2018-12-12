@@ -1,6 +1,6 @@
-import { Vector } from 'Sandbox/Vector';
-import { Material } from 'Sandbox/Material';
-import { Shape } from 'Sandbox/Shape';
+import { Vector } from 'Sandbox/Vector.js';
+import { Material } from 'Sandbox/Material.js';
+import { Shape } from 'Sandbox/Shape.js';
 
 export class Entity {
 

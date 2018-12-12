@@ -1,4 +1,4 @@
-import { Candidates } from 'Sudoku/Candidates';
+import { Candidates } from 'Sudoku/Candidates.js';
 
 export class Cell {
 

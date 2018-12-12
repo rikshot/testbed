@@ -1,4 +1,4 @@
-import { Vector } from 'Sandbox/Vector';
+import { Vector } from 'Sandbox/Vector.js';
 
 export class Segment {
 

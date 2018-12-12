@@ -1,6 +1,6 @@
-import { Rectangle } from 'Sandbox/Rectangle';
-import { Vector } from 'Sandbox/Vector';
-import { Segment } from 'Sandbox/Segment';
+import { Rectangle } from 'Sandbox/Rectangle.js';
+import { Vector } from 'Sandbox/Vector.js';
+import { Segment } from 'Sandbox/Segment.js';
 
 export interface IDistance {
     intersects: boolean;

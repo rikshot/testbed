@@ -1,8 +1,8 @@
-import { RenderMode, Mandelbrot } from 'Fractal/Mandelbrot';
-import { NumberRange } from 'Fractal/NumberRange';
-import { Vector } from 'Sandbox/Vector';
-import { Rectangle } from 'Sandbox/Rectangle';
-import { Config } from 'Fractal/Config';
+import { RenderMode, Mandelbrot } from 'Fractal/Mandelbrot.js';
+import { NumberRange } from 'Fractal/NumberRange.js';
+import { Vector } from 'Sandbox/Vector.js';
+import { Rectangle } from 'Sandbox/Rectangle.js';
+import { Config } from 'Fractal/Config.js';
 
 const getConfig = (rectangle: Rectangle): Config => {
     const config: any = {};

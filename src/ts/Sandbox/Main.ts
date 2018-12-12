@@ -1,11 +1,4 @@
-import { Color } from 'Sandbox/Color';
-import { Material } from 'Sandbox/Material';
-import { Entity } from 'Sandbox/Entity';
-import { Simulation } from 'Sandbox/Simulation';
-import { Vector } from 'Sandbox/Vector';
-import { Rectangle } from 'Sandbox/Rectangle';
-import { Quadtree } from 'Sandbox/Quadtree';
-import { Shape } from 'Sandbox/Shape';
+import { Simulation } from 'Sandbox/Simulation.js';
 
 const canvas = <HTMLCanvasElement> document.getElementById('sandbox');
 const context = <CanvasRenderingContext2D> canvas.getContext('2d');
@@ -47,7 +40,7 @@ Simulation.Fetch('http://localhost:8000/build/src/json/vertex_collision.json').t
         }
 
         context.strokeStyle = 'orange';
-        simulation.quadtree.visit((quadtree, depth) => {
+        simulation.quadtree.visit((quadtree) => {
             context.strokeRect(quadtree.rectangle.start.x, quadtree.rectangle.start.y, quadtree.rectangle.width, quadtree.rectangle.height);
         });
     };

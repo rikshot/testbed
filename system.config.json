@@ -1,0 +1,11 @@
+{
+    "path_prefix": "/build/src/ts/",
+    "packages": {
+        "Fractal": {
+            "path": "Fractal"
+        },
+        "Sandbox": {
+            "path": "Sandbox"
+        }
+    }
+}

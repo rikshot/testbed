@@ -1,6 +1,6 @@
 import * as tape from 'tape';
 
-import { Car } from 'Models/Car';
+import { Car } from 'Models/Car.js';
 
 tape('Model', (t) => {
 

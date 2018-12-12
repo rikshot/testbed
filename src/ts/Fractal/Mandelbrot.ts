@@ -1,10 +1,10 @@
-import { Rectangle, IRectangle } from 'Sandbox/Rectangle';
-import { NumberRange } from 'Fractal/NumberRange';
-import { Color } from 'Sandbox/Color';
-import { Scheduler, ITaskResult } from 'Fractal/Scheduler';
-import { Vector } from 'Sandbox/Vector';
-import { Config, IConfig } from 'Fractal/Config';
-import { IBuffers, ChunkConfig, IChunkConfig, IChunkResult } from 'Fractal/ChunkConfig';
+import { Rectangle, IRectangle } from 'Sandbox/Rectangle.js';
+import { NumberRange } from 'Fractal/NumberRange.js';
+import { Color } from 'Sandbox/Color.js';
+import { Scheduler, ITaskResult } from 'Fractal/Scheduler.js';
+import { Vector } from 'Sandbox/Vector.js';
+import { Config, IConfig } from 'Fractal/Config.js';
+import { IBuffers, ChunkConfig, IChunkConfig, IChunkResult } from 'Fractal/ChunkConfig.js';
 
 interface IModuleWindow extends Window {
     Module: any;
@@ -142,11 +142,13 @@ export class Mandelbrot {
             }
         }).then((Module: any) => {
             const rawConfig = JSON.stringify(config);
+            console.dir(rawConfig);
             const rawConfigLength = Module.lengthBytesUTF8(rawConfig) + 1;
             const rawConfigOffset = Module._malloc(rawConfigLength);
             Module.stringToUTF8(rawConfig, rawConfigOffset, rawConfigLength);
 
             const rawChunkConfig = JSON.stringify(chunkConfig);
+            console.dir(rawChunkConfig);
             const rawChunkConfigLength = Module.lengthBytesUTF8(rawChunkConfig) + 1;
             const rawChunkConfigOffset = Module._malloc(rawChunkConfigLength);
             Module.stringToUTF8(rawChunkConfig, rawChunkConfigOffset, rawChunkConfigLength);
@@ -274,11 +276,11 @@ export class Mandelbrot {
         this._context = context;
 
         this._iterateScheduler = new Scheduler(Mandelbrot.iterateChunk, {
-            'Fractal/NumberRange': ['NumberRange']
+            'http://localhost:8000/build/src/ts/Fractal/NumberRange.js': ['NumberRange']
         });
 
         this._colorScheduler = new Scheduler(Mandelbrot.colorChunk, {
-            'Sandbox/Color': ['Color']
+            'http://localhost:8000/build/src/ts/Sandbox/Color.js': ['Color']
         });
 
         if (typeof WebAssembly !== 'undefined') {
@@ -355,7 +357,11 @@ export class Mandelbrot {
             throw new Error('No WebAssembly support');
         }
         return Promise.all(
-            this.createChunks(config.rectangle).map((chunk) => this._wasmIterateScheduler!.apply([config.getDTO(), chunk.getDTO()]))
+            this.createChunks(config.rectangle).map((chunk) => {
+                console.dir(config.getDTO());
+                console.dir(chunk.getDTO());
+                return this._wasmIterateScheduler!.apply([config.getDTO(), chunk.getDTO()]);
+            })
         ).then((results: IChunkResult[]) => {
             const { histogram, total } = this.getHistogram(config, results);
             return Promise.all(results.map(({ buffers, chunkConfig }) => {

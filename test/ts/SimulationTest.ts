@@ -1,6 +1,6 @@
 import * as tape from 'tape';
 
-import { Simulation } from 'Sandbox/Simulation';
+import { Simulation } from 'Sandbox/Simulation.js';
 
 tape('Simulation', (t) => {
 

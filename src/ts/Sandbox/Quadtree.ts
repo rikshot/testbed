@@ -1,5 +1,5 @@
-import { Vector } from 'Sandbox/Vector';
-import { Rectangle } from 'Sandbox/Rectangle';
+import { Vector } from 'Sandbox/Vector.js';
+import { Rectangle } from 'Sandbox/Rectangle.js';
 
 export class Quadtree<T> {
 

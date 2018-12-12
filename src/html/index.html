@@ -5,7 +5,9 @@
         <meta charset="utf-8" />
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous" />
         <link type="text/css" rel="stylesheet" href="/build/src/css/main.css" media="screen" />
-        <script src="/node_modules/systemjs/dist/system.js"></script>
+        <script type="systemjs-packagemap" src="/system.config.json"></script>
+        <script src="/node_modules/systemjs/dist/system.min.js"></script>
+        <script src="/node_modules/systemjs/dist/extras/amd.min.js"></script>
     </head>
     <body>
         <canvas id="fractal" width="1920" height="1080"></canvas>
@@ -44,9 +46,7 @@
             </div></div>
         </div>
         <script>
-            System.import('/system.config.js').then(() => {
-                System.import('Fractal/Main');
-            });
+            System.import('Fractal/Main.js');
         </script>
     </body>
 </html>
