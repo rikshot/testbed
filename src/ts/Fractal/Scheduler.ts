@@ -47,7 +47,7 @@ export class Scheduler<T extends (...parameters: any[]) => ITaskResult | Promis
         this._moduleMap = moduleMap;
 
         const taskSource = URL.createObjectURL(new Blob([this.getRunner(task)], {
-            type: 'text/javascript'
+            type: 'text/javascript',
         }));
 
         for (let i = 0; i < navigator.hardwareConcurrency; ++i) {
@@ -128,7 +128,7 @@ export class Scheduler<T extends (...parameters: any[]) => ITaskResult | Promis
                 this._queue.push({
                     taskId,
                     parameters: parameters ? parameters : [],
-                    transferables: transferables ? transferables : []
+                    transferables: transferables ? transferables : [],
                 });
             }
         });
@@ -148,13 +148,13 @@ export class Scheduler<T extends (...parameters: any[]) => ITaskResult | Promis
 
         delete this._tasks[data.taskId];
 
-        const worker = <TaskWorker> event.target;
+        const worker = event.target as TaskWorker;
         if (this._queue.length > 0) {
             const queuedTask = this._queue.shift();
             worker.postMessage([
                 queuedTask!.taskId,
                 queuedTask!.parameters ? queuedTask!.parameters : [],
-                this._moduleMap
+                this._moduleMap,
             ], queuedTask!.transferables ? queuedTask!.transferables : []);
         } else {
             worker.working = false;

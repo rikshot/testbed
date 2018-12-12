@@ -31,35 +31,35 @@ export class Vector implements IVector {
     public neg(): Vector {
         return new Vector(
             -this.x,
-            -this.y
+            -this.y,
         );
     }
 
     public add(vector: Vector): Vector {
         return new Vector(
             this.x + vector.x,
-            this.y + vector.y
+            this.y + vector.y,
         );
     }
 
     public sub(vector: Vector): Vector {
         return new Vector(
             this.x - vector.x,
-            this.y - vector.y
+            this.y - vector.y,
         );
     }
 
     public mul(value: number): Vector {
         return new Vector(
             this.x * value,
-            this.y * value
+            this.y * value,
         );
     }
 
     public div(value: number): Vector {
         return new Vector(
             this.x / value,
-            this.y / value
+            this.y / value,
         );
     }
 
@@ -86,21 +86,21 @@ export class Vector implements IVector {
         }
         return new Vector(
             this.x / length,
-            this.y / length
+            this.y / length,
         );
     }
 
     public left(): Vector {
         return new Vector(
             this.y,
-            -this.x
+            -this.x,
         );
     }
 
     public right(): Vector {
         return new Vector(
             -this.y,
-            this.x
+            this.x,
         );
     }
 
@@ -111,7 +111,7 @@ export class Vector implements IVector {
     public getDTO(): IVector {
         return {
             x: this.x,
-            y: this.y
+            y: this.y,
         };
     }
 

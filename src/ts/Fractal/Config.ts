@@ -1,4 +1,4 @@
-import { Rectangle, IRectangle } from 'Sandbox/Rectangle.js';
+import { IRectangle, Rectangle } from 'Sandbox/Rectangle.js';
 
 export interface IConfig {
     iterations: number;
@@ -30,7 +30,7 @@ export class Config {
             red: this.red,
             green: this.green,
             blue: this.blue,
-            rectangle: this.rectangle.getDTO()
+            rectangle: this.rectangle.getDTO(),
         };
     }
 

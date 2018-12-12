@@ -1,6 +1,6 @@
 import { Rectangle } from 'Sandbox/Rectangle.js';
-import { Vector } from 'Sandbox/Vector.js';
 import { Segment } from 'Sandbox/Segment.js';
+import { Vector } from 'Sandbox/Vector.js';
 
 export interface IDistance {
     intersects: boolean;
@@ -88,7 +88,7 @@ export class Shape {
         }
         return new Rectangle(
             new Vector(x_min, y_min),
-            new Vector(x_max, y_max)
+            new Vector(x_max, y_max),
         );
     }
 
@@ -118,11 +118,11 @@ export class Shape {
         const support = this.support(direction);
         const left = new Segment(
             this._vertices[support === 0 ? this._vertices.length - 1 : support - 1],
-            this._vertices[support]
+            this._vertices[support],
         );
         const right = new Segment(
             this._vertices[support + 1 === this._vertices.length ? 0 : support + 1],
-            this._vertices[support]
+            this._vertices[support],
         );
         if (left.segment.dot(direction) < right.segment.dot(direction)) {
             return left;

@@ -5,7 +5,7 @@ export class Segment {
     public static Closest(a: Segment, b: Segment): Segment {
         return new Segment(
             a.closest(b.a),
-            a.closest(b.b)
+            a.closest(b.b),
         );
     }
 
@@ -34,7 +34,7 @@ export class Segment {
     public middle(): Vector {
         return new Vector(
             (this.a.x + this.b.x) / 2,
-            (this.a.y + this.b.y) / 2
+            (this.a.y + this.b.y) / 2,
         );
     }
 

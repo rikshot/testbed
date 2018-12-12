@@ -1,5 +1,5 @@
-import { Vector } from 'Sandbox/Vector.js';
 import { Entity } from 'Sandbox/Entity.js';
+import { Vector } from 'Sandbox/Vector.js';
 
 export class Contact {
 

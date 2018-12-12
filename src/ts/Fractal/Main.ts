@@ -1,8 +1,8 @@
-import { RenderMode, Mandelbrot } from 'Fractal/Mandelbrot.js';
-import { NumberRange } from 'Fractal/NumberRange.js';
-import { Vector } from 'Sandbox/Vector.js';
-import { Rectangle } from 'Sandbox/Rectangle.js';
 import { Config } from 'Fractal/Config.js';
+import { Mandelbrot, RenderMode } from 'Fractal/Mandelbrot.js';
+import { NumberRange } from 'Fractal/NumberRange.js';
+import { Rectangle } from 'Sandbox/Rectangle.js';
+import { Vector } from 'Sandbox/Vector.js';
 
 const getConfig = (rectangle: Rectangle): Config => {
     const config: any = {};
@@ -10,22 +10,22 @@ const getConfig = (rectangle: Rectangle): Config => {
         iterations: 'integer',
         red: 'float',
         green: 'float',
-        blue: 'float'
+        blue: 'float',
     }).forEach(([key, type]) => {
-        const rawValue = (<HTMLInputElement> document.getElementById(key)).value;
+        const rawValue = (document.getElementById(key) as HTMLInputElement).value;
         config[key] = type === 'integer' ? parseInt(rawValue, 10) : parseFloat(rawValue);
     });
     config.rectangle = rectangle;
     return new Config(config.iterations, config.red, config.green, config.blue, rectangle);
 };
 
-const selection = <HTMLCanvasElement> document.getElementById('selection');
+const selection = document.getElementById('selection') as HTMLCanvasElement;
 const selectionContext = selection.getContext('2d');
 if (!selectionContext) {
     throw new Error('Unable to create context');
 }
 
-const canvas = <HTMLCanvasElement> document.getElementById('fractal');
+const canvas = document.getElementById('fractal') as HTMLCanvasElement;
 const mandelbrot = new Mandelbrot(canvas);
 
 let start: Vector | undefined;
@@ -37,7 +37,7 @@ let realRange = new NumberRange(-2.5, 1.0);
 let imaginaryRange = new NumberRange(-1.0, 1.0);
 
 const render = (rectangle: Rectangle) => {
-    const modeElement = <HTMLSelectElement> document.getElementById('mode');
+    const modeElement = document.getElementById('mode') as HTMLSelectElement;
     const modeString = modeElement.options[modeElement.selectedIndex].value;
 
     const config = getConfig(rectangle);
@@ -57,12 +57,12 @@ selection.addEventListener('mousedown', (event: MouseEvent) => {
 
     start = new Vector(
         NumberRange.Scale(elementWidthRange, event.clientX, canvasWidthRange),
-        NumberRange.Scale(elementHeightRange, event.clientY, canvasHeightRange)
+        NumberRange.Scale(elementHeightRange, event.clientY, canvasHeightRange),
     );
 
     complexStart = new Vector(
         NumberRange.Scale(canvasWidthRange, start.x, realRange),
-        NumberRange.Scale(canvasHeightRange, start.y, imaginaryRange)
+        NumberRange.Scale(canvasHeightRange, start.y, imaginaryRange),
     );
 });
 
@@ -76,7 +76,7 @@ selection.addEventListener('mousemove', (event) => {
 
         const current = new Vector(
             NumberRange.Scale(elementWidthRange, event.clientX, canvasWidthRange),
-            NumberRange.Scale(elementHeightRange, event.clientY, canvasHeightRange)
+            NumberRange.Scale(elementHeightRange, event.clientY, canvasHeightRange),
         );
 
         selectionContext.clearRect(0, 0, selection.width, selection.height);
@@ -85,7 +85,7 @@ selection.addEventListener('mousemove', (event) => {
             start.x,
             start.y,
             current.x - start.x,
-            current.y - start.y
+            current.y - start.y,
         );
     }
 });
@@ -101,7 +101,7 @@ selection.addEventListener('mouseup', (event) => {
 
     rectangle = new Rectangle(complexStart, new Vector(
         NumberRange.Scale(canvasWidthRange, NumberRange.Scale(elementWidthRange, event.clientX, canvasWidthRange), realRange),
-        NumberRange.Scale(canvasHeightRange, NumberRange.Scale(elementHeightRange, event.clientY, canvasHeightRange), imaginaryRange)
+        NumberRange.Scale(canvasHeightRange, NumberRange.Scale(elementHeightRange, event.clientY, canvasHeightRange), imaginaryRange),
     ));
 
     render(rectangle);
@@ -113,13 +113,13 @@ selection.addEventListener('mouseup', (event) => {
     complexStart = undefined;
 });
 
-const renderButton = <HTMLButtonElement> document.getElementById('render');
+const renderButton = document.getElementById('render') as HTMLButtonElement;
 renderButton.addEventListener('click', (event: Event) => {
     event.stopPropagation();
     render(rectangle);
 });
 
-const benchmarkButton = <HTMLButtonElement> document.getElementById('benchmark');
+const benchmarkButton = document.getElementById('benchmark') as HTMLButtonElement;
 benchmarkButton.addEventListener('click', (event: Event) => {
     event.stopPropagation();
     let average = 0;
@@ -136,7 +136,7 @@ benchmarkButton.addEventListener('click', (event: Event) => {
     iterate(0).then(() => console.log('Average: ' + average + 'ms.'));
 });
 
-const resetButton = <HTMLButtonElement> document.getElementById('reset');
+const resetButton = document.getElementById('reset') as HTMLButtonElement;
 resetButton.addEventListener('click', (event: Event) => {
     event.stopPropagation();
 

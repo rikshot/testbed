@@ -1,4 +1,4 @@
-import { Vector, IVector } from 'Sandbox/Vector.js';
+import { IVector, Vector } from 'Sandbox/Vector.js';
 
 export interface IRectangle {
     start: IVector;
@@ -15,7 +15,7 @@ export class Rectangle {
         const half_height = height / 2;
         return new Rectangle(
             new Vector(position.x - half_width, position.y - half_height),
-            new Vector(position.x + half_width, position.y + half_height)
+            new Vector(position.x + half_width, position.y + half_height),
         );
     }
 
@@ -46,7 +46,7 @@ export class Rectangle {
             this.start,
             new Vector(this.end.x, this.start.y),
             this.end,
-            new Vector(this.start.x, this.end.y)
+            new Vector(this.start.x, this.end.y),
         ];
     }
 
@@ -55,7 +55,7 @@ export class Rectangle {
             start: this.start.getDTO(),
             end: this.end.getDTO(),
             width: this.width,
-            height: this.height
+            height: this.height,
         };
     }
 

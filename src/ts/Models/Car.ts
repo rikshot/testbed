@@ -9,7 +9,7 @@ export class Car extends Vehicle<ICar> {
 
     public static readonly Schema: ISchema<ICar> = {
         ...Vehicle.Schema,
-        seats: ['number']
+        seats: ['number'],
     };
 
     public constructor(data: ICar) {

@@ -10,7 +10,7 @@ export class Color {
             color1.red() + (color2.red() - color1.red()) * value,
             color1.green() + (color2.green() - color1.green()) * value,
             color1.blue() + (color2.blue() - color1.blue()) * value,
-            color1.alpha() + (color2.alpha() - color1.alpha()) * value
+            color1.alpha() + (color2.alpha() - color1.alpha()) * value,
         );
     }
 

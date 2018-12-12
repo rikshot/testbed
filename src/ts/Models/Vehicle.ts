@@ -11,7 +11,7 @@ export abstract class Vehicle<T extends IVehicle> extends Model<T> {
     public static readonly Schema: ISchema<IVehicle> = {
         make: ['string'],
         model: ['string'],
-        fuel: ['number']
+        fuel: ['number'],
     };
 
     public getMake() {

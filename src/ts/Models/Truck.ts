@@ -11,7 +11,7 @@ export class Truck extends Vehicle<ITruck> {
     public static readonly Schema: ISchema<ITruck> = {
         ...Vehicle.Schema,
         capacity: ['number'],
-        wheels: ['number']
+        wheels: ['number'],
     };
 
     constructor(data: ITruck) {

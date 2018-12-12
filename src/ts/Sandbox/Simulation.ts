@@ -1,10 +1,10 @@
 import { Color } from 'Sandbox/Color.js';
-import { Material } from 'Sandbox/Material.js';
-import { Segment } from 'Sandbox/Segment.js';
-import { Rectangle } from 'Sandbox/Rectangle.js';
-import { Entity } from 'Sandbox/Entity.js';
-import { Quadtree } from 'Sandbox/Quadtree.js';
 import { Contact } from 'Sandbox/Contact.js';
+import { Entity } from 'Sandbox/Entity.js';
+import { Material } from 'Sandbox/Material.js';
+import { Quadtree } from 'Sandbox/Quadtree.js';
+import { Rectangle } from 'Sandbox/Rectangle.js';
+import { Segment } from 'Sandbox/Segment.js';
 import { Shape } from 'Sandbox/Shape.js';
 import { Vector } from 'Sandbox/Vector.js';
 
@@ -60,47 +60,47 @@ export class Simulation {
 
     public static Parse(json_simulation: ISimulationJSON): Simulation {
         const materials: { [key: string]: Material } = {};
-        json_simulation['materials'].forEach((json_material) => {
-            materials[json_material['id']] = new Material(
-                json_material['density'],
-                json_material['restitution'],
+        json_simulation.materials.forEach((json_material) => {
+            materials[json_material.id] = new Material(
+                json_material.density,
+                json_material.restitution,
                 new Color(
-                    json_material['color'][0],
-                    json_material['color'][1],
-                    json_material['color'][2],
-                    json_material['color'][3]
-                )
+                    json_material.color[0],
+                    json_material.color[1],
+                    json_material.color[2],
+                    json_material.color[3],
+                ),
             );
         });
-        const simulation = new Simulation(json_simulation['width'], json_simulation['height']);
-        json_simulation['entities'].forEach((json_entity) => {
-            let json_shape = json_entity['shape'];
+        const simulation = new Simulation(json_simulation.width, json_simulation.height);
+        json_simulation.entities.forEach((json_entity) => {
+            let json_shape = json_entity.shape;
             const shape = (() => {
-                switch (json_shape['type']) {
+                switch (json_shape.type) {
                     case 'rectangle':
-                        json_shape = <IRectangleJSON> json_shape;
-                        return new Shape(Rectangle.Create(json_shape['width'], json_shape['height']).vertices);
+                        json_shape = json_shape as IRectangleJSON;
+                        return new Shape(Rectangle.Create(json_shape.width, json_shape.height).vertices);
 
                     case 'polygon':
-                        json_shape = <IPolygonJSON> json_shape;
-                        return new Shape(json_shape['vertices'].map((vertex) => new Vector(vertex[0], vertex[1])));
+                        json_shape = json_shape as IPolygonJSON;
+                        return new Shape(json_shape.vertices.map((vertex) => new Vector(vertex[0], vertex[1])));
                 }
             })();
             const entity = new Entity(
                 shape,
-                materials[json_entity['material']]
+                materials[json_entity.material],
             );
-            if (json_entity['position']) {
+            if (json_entity.position) {
                 entity.position = new Vector(
-                    json_entity['position'][0],
-                    json_entity['position'][1]
+                    json_entity.position[0],
+                    json_entity.position[1],
                 );
             }
-            const orientation = json_entity['orientation'];
+            const orientation = json_entity.orientation;
             if (typeof orientation === 'number') {
                 entity.orientation = orientation;
             }
-            const kinematic = json_entity['kinematic'];
+            const kinematic = json_entity.kinematic;
             if (typeof kinematic === 'boolean') {
                 entity.kinematic = kinematic;
             }
@@ -627,7 +627,7 @@ export class Simulation {
             initial.linear_velocity.add(derivative[1].mul(time_step)),
             initial.linear_acceleration,
             initial.angular_velocity + derivative[3] * time_step,
-            initial.angular_acceleration
+            initial.angular_acceleration,
         ];
     }
 

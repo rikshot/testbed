@@ -1,10 +1,10 @@
-import { Rectangle, IRectangle } from 'Sandbox/Rectangle.js';
-import { NumberRange } from 'Fractal/NumberRange.js';
-import { Color } from 'Sandbox/Color.js';
-import { Scheduler, ITaskResult } from 'Fractal/Scheduler.js';
-import { Vector } from 'Sandbox/Vector.js';
+import { ChunkConfig, IBuffers, IChunkConfig, IChunkResult } from 'Fractal/ChunkConfig.js';
 import { Config, IConfig } from 'Fractal/Config.js';
-import { IBuffers, ChunkConfig, IChunkConfig, IChunkResult } from 'Fractal/ChunkConfig.js';
+import { NumberRange } from 'Fractal/NumberRange.js';
+import { ITaskResult, Scheduler } from 'Fractal/Scheduler.js';
+import { Color } from 'Sandbox/Color.js';
+import { IRectangle, Rectangle } from 'Sandbox/Rectangle.js';
+import { Vector } from 'Sandbox/Vector.js';
 
 interface IModuleWindow extends Window {
     Module: any;
@@ -16,7 +16,7 @@ declare var Module: any;
 export enum RenderMode {
     TRANSFERRED,
     SHARED,
-    WASM
+    WASM,
 }
 
 type IterateChunk = (config: IConfig, chunkConfig: IChunkConfig, buffers?: IBuffers) => ITaskResult | Promise<ITaskResult>;
@@ -25,7 +25,7 @@ type ColorChunk = (config: IConfig, chunkConfig: IChunkConfig, buffers: IBuffers
 export class Mandelbrot {
 
     private static iterateChunk(config: IConfig, chunkConfig: IChunkConfig, buffers?: IBuffers) {
-        const NumberRange = (<any> self).NumberRange;
+        const NumberRange = (self as any).NumberRange;
 
         const histogram = new Uint32Array(config.iterations);
         const iterations = buffers ? buffers.iterations : new Uint32Array(chunkConfig.image.width * chunkConfig.image.height);
@@ -86,19 +86,19 @@ export class Mandelbrot {
             transferables: [
                 histogram.buffer,
                 iterations.buffer,
-                fractionals.buffer
-            ]
+                fractionals.buffer,
+            ],
         };
     }
 
     private static colorChunk(config: IConfig, chunkConfig: IChunkConfig, buffers: IBuffers, total: number) {
-        const Color = (<any> self).Color;
+        const Color = (self as any).Color;
 
         const gradient = (n: number) => {
             return new Color(
                 Math.floor(255 * n * config.red),
                 Math.floor(255 * n * config.green),
-                Math.floor(255 * n * config.blue)
+                Math.floor(255 * n * config.blue),
             );
         };
 
@@ -130,11 +130,11 @@ export class Mandelbrot {
     private static iterateChunkWasm(config: IConfig, chunkConfig: IChunkConfig) {
         return new Promise((resolve, reject) => {
             if (typeof Module === 'undefined') {
-                const Module = (<IModuleWindow> self).Module = {
+                const Module = (self as IModuleWindow).Module = {
                     locateFile: (file: string) => 'http://localhost:8000/build/src/cpp/' + file,
                     onRuntimeInitialized: () => {
                         resolve(Module);
-                    }
+                    },
                 };
                 System.import('http://localhost:8000/build/src/cpp/mandelbrot.js');
             } else {
@@ -179,8 +179,8 @@ export class Mandelbrot {
                 transferables: [
                     histogram.buffer,
                     iterations.buffer,
-                    fractionals.buffer
-                ]
+                    fractionals.buffer,
+                ],
             };
         });
     }
@@ -188,11 +188,11 @@ export class Mandelbrot {
     private static colorChunkWasm(config: IConfig, chunkConfig: IChunkConfig, buffers: IBuffers, total: number) {
         return new Promise((resolve, reject) => {
             if (typeof Module === 'undefined') {
-                const Module = (<IModuleWindow> self).Module = {
+                const Module = (self as IModuleWindow).Module = {
                     locateFile: (file: string) => 'http://localhost:8000/build/src/cpp/' + file,
                     onRuntimeInitialized: () => {
                         resolve(Module);
-                    }
+                    },
                 };
                 System.import('http://localhost:8000/build/src/cpp/mandelbrot.js');
             } else {
@@ -237,7 +237,7 @@ export class Mandelbrot {
 
             return {
                 result: { pixels, chunkConfig },
-                transferables: [pixels.buffer]
+                transferables: [pixels.buffer],
             };
         });
     }
@@ -276,11 +276,11 @@ export class Mandelbrot {
         this._context = context;
 
         this._iterateScheduler = new Scheduler(Mandelbrot.iterateChunk, {
-            'http://localhost:8000/build/src/ts/Fractal/NumberRange.js': ['NumberRange']
+            'http://localhost:8000/build/src/ts/Fractal/NumberRange.js': ['NumberRange'],
         });
 
         this._colorScheduler = new Scheduler(Mandelbrot.colorChunk, {
-            'http://localhost:8000/build/src/ts/Sandbox/Color.js': ['Color']
+            'http://localhost:8000/build/src/ts/Sandbox/Color.js': ['Color'],
         });
 
         if (typeof WebAssembly !== 'undefined') {
@@ -304,19 +304,19 @@ export class Mandelbrot {
 
     private renderTransferred(config: Config) {
         return Promise.all(
-            this.createChunks(config.rectangle).map((chunk) => this._iterateScheduler.apply([config.getDTO(), chunk.getDTO()]))
+            this.createChunks(config.rectangle).map((chunk) => this._iterateScheduler.apply([config.getDTO(), chunk.getDTO()])),
         ).then((results: IChunkResult[]) => {
             const { histogram, total } = this.getHistogram(config, results);
             return Promise.all(results.map(({ buffers, chunkConfig }) => {
                 buffers.histogram = histogram;
                 return this._colorScheduler.apply(
                     [config.getDTO(), chunkConfig, buffers, total],
-                    [buffers.iterations.buffer, buffers.fractionals.buffer]
+                    [buffers.iterations.buffer, buffers.fractionals.buffer],
                 ).then(({ pixels }) => {
                     this._context.putImageData(
                         new ImageData(new Uint8ClampedArray(pixels.buffer), chunkConfig.image.width, chunkConfig.image.height),
                         chunkConfig.image.start.x,
-                        chunkConfig.image.start.y
+                        chunkConfig.image.start.y,
                     );
                 });
             }));
@@ -331,10 +331,10 @@ export class Mandelbrot {
             histogram: new Uint32Array(new SharedArrayBuffer(config.iterations * Uint32Array.BYTES_PER_ELEMENT)),
             iterations: new Uint32Array(new SharedArrayBuffer(this._width * this._height * Uint32Array.BYTES_PER_ELEMENT)),
             fractionals: new Float64Array(new SharedArrayBuffer(this._width * this._height * Float64Array.BYTES_PER_ELEMENT)),
-            pixels: new Uint32Array(new SharedArrayBuffer(this._width * this._height * Uint32Array.BYTES_PER_ELEMENT))
+            pixels: new Uint32Array(new SharedArrayBuffer(this._width * this._height * Uint32Array.BYTES_PER_ELEMENT)),
         };
         return Promise.all(
-            this.createChunks(config.rectangle, this._buffers).map((chunk) => this._iterateScheduler.apply([config.getDTO(), chunk.getDTO(), this._buffers]))
+            this.createChunks(config.rectangle, this._buffers).map((chunk) => this._iterateScheduler.apply([config.getDTO(), chunk.getDTO(), this._buffers])),
         ).then((results: IChunkResult[]) => {
             const { histogram, total } = this.getHistogram(config, results);
             return Promise.all(results.map(({ buffers, chunkConfig }) => {
@@ -361,19 +361,19 @@ export class Mandelbrot {
                 console.dir(config.getDTO());
                 console.dir(chunk.getDTO());
                 return this._wasmIterateScheduler!.apply([config.getDTO(), chunk.getDTO()]);
-            })
+            }),
         ).then((results: IChunkResult[]) => {
             const { histogram, total } = this.getHistogram(config, results);
             return Promise.all(results.map(({ buffers, chunkConfig }) => {
                 buffers.histogram = histogram;
                 return this._wasmColorScheduler!.apply(
                     [config.getDTO(), chunkConfig, buffers, total],
-                    [buffers.iterations.buffer, buffers.fractionals.buffer]
+                    [buffers.iterations.buffer, buffers.fractionals.buffer],
                 ).then(({ pixels }) => {
                     this._context.putImageData(
                         new ImageData(new Uint8ClampedArray(pixels.buffer), chunkConfig.image.width, chunkConfig.image.height),
                         chunkConfig.image.start.x,
-                        chunkConfig.image.start.y
+                        chunkConfig.image.start.y,
                     );
                 });
             }));
@@ -398,14 +398,14 @@ export class Mandelbrot {
                     new Rectangle(
                         new Vector(
                             NumberRange.Scale(this._widthRange, x, realRange),
-                            NumberRange.Scale(this._heightRange, y, imaginaryRange)
+                            NumberRange.Scale(this._heightRange, y, imaginaryRange),
                         ),
                         new Vector(
                             NumberRange.Scale(this._widthRange, x + chunkWidth, realRange),
-                            NumberRange.Scale(this._heightRange, y + chunkHeight, imaginaryRange)
-                        )
+                            NumberRange.Scale(this._heightRange, y + chunkHeight, imaginaryRange),
+                        ),
                     ),
-                    buffers
+                    buffers,
                 ));
             }
         }

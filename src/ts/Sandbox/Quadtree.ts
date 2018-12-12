@@ -1,5 +1,5 @@
-import { Vector } from 'Sandbox/Vector.js';
 import { Rectangle } from 'Sandbox/Rectangle.js';
+import { Vector } from 'Sandbox/Vector.js';
 
 export class Quadtree<T> {
 
@@ -116,20 +116,20 @@ export class Quadtree<T> {
             this._quadrants = [
               new Quadtree(new Rectangle(
                 this._rectangle.start,
-                new Vector(this._rectangle.start.x + half_width, this._rectangle.start.y + half_height)
+                new Vector(this._rectangle.start.x + half_width, this._rectangle.start.y + half_height),
               )),
               new Quadtree(new Rectangle(
                 new Vector(this._rectangle.start.x + half_width, this._rectangle.start.y),
-                new Vector(this._rectangle.end.x, this._rectangle.start.y + half_height)
+                new Vector(this._rectangle.end.x, this._rectangle.start.y + half_height),
               )),
               new Quadtree(new Rectangle(
                 new Vector(this._rectangle.start.x + half_width, this._rectangle.start.y + half_height),
-                this._rectangle.end
+                this._rectangle.end,
               )),
               new Quadtree(new Rectangle(
                 new Vector(this._rectangle.start.x, this._rectangle.start.y + half_height),
-                new Vector(this._rectangle.start.x + half_width, this._rectangle.end.y)
-              ))
+                new Vector(this._rectangle.start.x + half_width, this._rectangle.end.y),
+              )),
             ];
             for (let i = 0; i < this._count; ++i) {
                 for (const quadrant of this._quadrants) {

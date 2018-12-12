@@ -1,4 +1,4 @@
-import { Rectangle, IRectangle } from 'Sandbox/Rectangle.js';
+import { IRectangle, Rectangle } from 'Sandbox/Rectangle.js';
 
 export interface IBuffers {
     histogram: Uint32Array;
@@ -43,7 +43,7 @@ export class ChunkConfig {
             height: this.height,
             image: this.image.getDTO(),
             complex: this.complex.getDTO(),
-            buffers: this.buffers
+            buffers: this.buffers,
         };
     }
 

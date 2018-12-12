@@ -11,15 +11,15 @@
   "dependencies": {
     "@types/systemjs": "0.20.6",
     "@types/tape": "4.2.32",
-    "google-closure-compiler": "20181125.0.1",
+    "google-closure-compiler": "20181125.1.0",
     "nyc": "13.1.0",
-    "rollup": "0.67.3",
+    "rollup": "0.67.4",
     "rollup-plugin-commonjs": "9.2.0",
     "rollup-plugin-includepaths": "0.2.3",
     "systemjs": "2.1.1",
     "tap-spec": "5.0.0",
     "tape": "4.9.1",
     "tslint": "5.11.0",
-    "typescript": "3.2.1"
+    "typescript": "3.2.2"
   }
 }

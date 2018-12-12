@@ -1,7 +1,7 @@
 import { Simulation } from 'Sandbox/Simulation.js';
 
-const canvas = <HTMLCanvasElement> document.getElementById('sandbox');
-const context = <CanvasRenderingContext2D> canvas.getContext('2d');
+const canvas = document.getElementById('sandbox') as HTMLCanvasElement;
+const context = canvas.getContext('2d') as CanvasRenderingContext2D;
 
 Simulation.Fetch('http://localhost:8000/build/src/json/vertex_collision.json').then((simulation) => {
     canvas.width = simulation.width;

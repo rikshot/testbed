@@ -1,8 +1,8 @@
 import * as tape from 'tape';
 
-import { Vector } from 'Sandbox/Vector.js';
 import { Rectangle } from 'Sandbox/Rectangle.js';
 import { Shape } from 'Sandbox/Shape.js';
+import { Vector } from 'Sandbox/Vector.js';
 
 tape('Shape', (t) => {
 
@@ -28,7 +28,7 @@ tape('Shape', (t) => {
         const shape = new Shape([
             new Vector(0, 0),
             new Vector(10, 10),
-            new Vector(0, 10)
+            new Vector(0, 10),
         ]);
         st.deepEqual(shape.bounding_box(), new Rectangle(new Vector(0, 0), new Vector(10, 10)));
         st.end();

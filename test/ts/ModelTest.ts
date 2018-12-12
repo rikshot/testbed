@@ -9,7 +9,7 @@ tape('Model', (t) => {
             make: 'Volvo',
             model: 'V70',
             fuel: 0,
-            seats: 4
+            seats: 4,
         });
         st.equal(car.name, 'Car');
         st.equal(car.getMake(), 'Volvo');
