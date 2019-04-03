@@ -1,3 +1,5 @@
+extern crate console_error_panic_hook;
+
 #[macro_use]
 extern crate serde_derive;
 
@@ -7,9 +9,9 @@ extern crate serde_json;
 extern crate num_traits;
 use num_traits::float::Float;
 
+use std::ffi::CStr;
 use std::mem;
-use std::ffi::{CString, CStr};
-use std::os::raw::{c_void, c_char};
+use std::os::raw::{c_char, c_void};
 
 #[no_mangle]
 pub extern "C" fn alloc(size: usize) -> *mut c_void {
@@ -26,25 +28,25 @@ pub unsafe extern "C" fn dealloc(ptr: *mut c_void, cap: usize) {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Vector {
-    x: f32,
-    y: f32
+    x: f64,
+    y: f64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Rectangle {
     start: Vector,
     end: Vector,
-    width: f32,
-    height: f32
+    width: f64,
+    height: f64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Config {
-    iterations: f32,
-    red: f32,
-    green: f32,
-    blue: f32,
-    rectangle: Rectangle
+    iterations: f64,
+    red: f64,
+    green: f64,
+    blue: f64,
+    rectangle: Rectangle,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -52,7 +54,7 @@ pub struct Buffers {
     histogram: Vec<u32>,
     iterations: Vec<u32>,
     fractionals: Vec<f64>,
-    pixels: Option<Vec<u32>>
+    pixels: Option<Vec<u32>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -61,36 +63,34 @@ struct ChunkConfig {
     height: f64,
     image: Rectangle,
     complex: Rectangle,
-    buffers: Option<Buffers>
+    buffers: Option<Buffers>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ChunkResult {
     buffers: Buffers,
-    total: f64
+    total: f64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 struct NumberRange<T: Float> {
     min: T,
     max: T,
-    size: T
+    size: T,
 }
 
-impl <T: Float> NumberRange<T> {
-
+impl<T: Float> NumberRange<T> {
     pub fn new(min: T, max: T) -> NumberRange<T> {
         NumberRange {
             min,
             max,
-            size: (max - min).abs()
+            size: (max - min).abs(),
         }
     }
-    
+
     pub fn scale(input: &NumberRange<T>, value: T, output: &NumberRange<T>) -> T {
         (input.max * output.min - input.min * output.max + value * output.size) / input.size
     }
-
 }
 
 struct Color {
@@ -98,13 +98,18 @@ struct Color {
     green: u8,
     blue: u8,
     alpha: u8,
-    abgr: u32
+    abgr: u32,
 }
 
 impl Color {
-
     pub fn black() -> &'static Color {
-        static BLACK: Color = Color {red: 0, green: 0, blue: 0, alpha: 0xFF, abgr: 0};
+        static BLACK: Color = Color {
+            red: 0,
+            green: 0,
+            blue: 0,
+            alpha: 0xFF,
+            abgr: 0,
+        };
         &BLACK
     }
 
@@ -114,7 +119,11 @@ impl Color {
             green,
             blue,
             alpha,
-            abgr: (((alpha as u32) << 24) ^ ((blue as u32) << 16) ^ ((green as u32) << 8) ^ red as u32).into()
+            abgr: (((alpha as u32) << 24)
+                ^ ((blue as u32) << 16)
+                ^ ((green as u32) << 8)
+                ^ red as u32)
+                .into(),
         }
     }
 
@@ -123,19 +132,24 @@ impl Color {
             color1.red + (color2.red - color1.red) * value as u8,
             color1.green + (color2.green - color1.green) * value as u8,
             color1.blue + (color2.blue - color1.blue) * value as u8,
-            color1.alpha + (color2.alpha - color1.alpha) * value as u8
+            color1.alpha + (color2.alpha - color1.alpha) * value as u8,
         )
     }
-
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn iterateChunk(raw_config: *const c_char, raw_chunk_config: *const c_char) -> u32 {
+pub unsafe extern "C" fn iterateChunk(
+    raw_config: *const c_char,
+    raw_chunk_config: *const c_char,
+) -> u32 {
+    console_error_panic_hook::set_once();
+
     let config_json = CStr::from_ptr(raw_config);
     let config: Config = serde_json::from_str(config_json.to_str().unwrap()).unwrap();
 
-    /*let chunk_config_json = CStr::from_ptr(raw_chunk_config);
-    let chunk_config: ChunkConfig = serde_json::from_str(chunk_config_json.to_str().unwrap()).unwrap();
+    let chunk_config_json = CStr::from_ptr(raw_chunk_config);
+    let chunk_config: ChunkConfig =
+        serde_json::from_str(chunk_config_json.to_str().unwrap()).unwrap();
 
     let image = chunk_config.image;
     let complex = chunk_config.complex;
@@ -155,10 +169,10 @@ pub unsafe extern "C" fn iterateChunk(raw_config: *const c_char, raw_chunk_confi
     let real_range = NumberRange::new(complex.start.x, complex.end.x);
     let imaginary_range = NumberRange::new(complex.start.y, complex.end.y);
 
-     let mut total = 0;
+    let mut total = 0;
     let mut index = 0;
-    for y in image.start.y as usize .. image.end.y as usize {
-        for x in image.start.x as usize .. image.end.x as usize {
+    for y in image.start.y as usize..image.end.y as usize {
+        for x in image.start.x as usize..image.end.x as usize {
             let i0 = NumberRange::scale(&width_range, x as f64, &real_range);
             let j0 = NumberRange::scale(&height_range, y as f64, &imaginary_range);
 
@@ -193,25 +207,35 @@ pub unsafe extern "C" fn iterateChunk(raw_config: *const c_char, raw_chunk_confi
                 if iteration < max_iterations as usize {
                     histogram[iteration] += 1;
                     total += 1;
-                    fractionals[index] = (iteration as f64 + 1.0 - f64::ln(f64::ln(ii + jj) / 2.0 / ln2) / ln2) % 1.0;
+                    fractionals[index] = (iteration as f64 + 1.0
+                        - f64::ln(f64::ln(ii + jj) / 2.0 / ln2) / ln2)
+                        % 1.0;
                 }
             }
         }
         index += 1;
-    } */
+    }
 
     return 0;
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn colorChunk(raw_config: *const c_char, raw_chunk_config: *const c_char, buffers: Buffers, total: u32) {
+pub unsafe extern "C" fn colorChunk(
+    raw_config: *const c_char,
+    raw_chunk_config: *const c_char,
+    buffers: Buffers,
+    total: u32,
+) {
+    console_error_panic_hook::set_once();
+
     let config_json = CStr::from_ptr(raw_config);
     let config: Config = serde_json::from_str(config_json.to_str().unwrap()).unwrap();
 
     let chunk_config_json = CStr::from_ptr(raw_chunk_config);
-    let chunk_config: ChunkConfig = serde_json::from_str(chunk_config_json.to_str().unwrap()).unwrap();
+    let chunk_config: ChunkConfig =
+        serde_json::from_str(chunk_config_json.to_str().unwrap()).unwrap();
 
-    /*let max_iterations = config.iterations;
+    let max_iterations = config.iterations;
     let red = config.red;
     let green = config.green;
     let blue = config.blue;
@@ -221,7 +245,7 @@ pub unsafe extern "C" fn colorChunk(raw_config: *const c_char, raw_chunk_config:
             f64::floor(255.0 * n * red) as u8,
             f64::floor(255.0 * n * green) as u8,
             f64::floor(255.0 * n * blue) as u8,
-            0xFF
+            0xFF,
         )
     };
 
@@ -229,32 +253,39 @@ pub unsafe extern "C" fn colorChunk(raw_config: *const c_char, raw_chunk_config:
     let mut pixels = buffers.pixels.unwrap();
 
     let mut index = 0;
-    for _y in image.start.y as usize .. image.end.y as usize {
-        for _x in image.start.x as usize .. image.end.x as usize {
+    for _y in image.start.y as usize..image.end.y as usize {
+        for _x in image.start.x as usize..image.end.x as usize {
             let iteration = buffers.iterations[index];
             if iteration < max_iterations as u32 {
                 let mut hue = 0.0;
-                for i in 0 .. iteration as usize {
+                for i in 0..iteration as usize {
                     hue += buffers.histogram[i] as f64 / total as f64;
                 }
                 let color1 = gradient(hue);
-                let color2 = gradient(hue + buffers.histogram[iteration as usize] as f64 / total as f64);
+                let color2 =
+                    gradient(hue + buffers.histogram[iteration as usize] as f64 / total as f64);
                 pixels[index] = Color::lerp(&color1, &color2, buffers.fractionals[index]).abgr;
             } else {
                 pixels[index] = Color::black().abgr;
             }
             index += 1;
         }
-    }*/
+    }
 }
 
-#[test]
-fn parse() {
-    unsafe {
-        let raw_config = CString::new(r#"{"iterations":1000,"red":10,"green":15,"blue":0.5,"rectangle":{"start":{"x":-2.5,"y":-1},"end":{"x":1,"y":1},"width":3.5,"height":2}}"#).unwrap().into_raw();
-        let raw_chunk_config = CString::new(r#"{"width":1920,"height":1080,"image":{"start":{"x":0,"y":0},"end":{"x":256,"y":256},"width":256,"height":256},"complex":{"start":{"x":-2.5,"y":-1},"end":{"x":-2.033333333333333,"y":-0.5259259259259259},"width":0.4666666666666668,"height":0.4740740740740741}}"#).unwrap().into_raw();
-        iterateChunk(raw_config, raw_chunk_config);
-        CString::from_raw(raw_config);
-        CString::from_raw(raw_chunk_config);
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::ffi::CString;
+
+    #[test]
+    fn parse() {
+        unsafe {
+            let raw_config = CString::new(r#"{"iterations":1000,"red":10,"green":15,"blue":0.5,"rectangle":{"start":{"x":-2.5,"y":-1},"end":{"x":1,"y":1},"width":3.5,"height":2}}"#).unwrap().into_raw();
+            let raw_chunk_config = CString::new(r#"{"width":1920,"height":1080,"image":{"start":{"x":0,"y":0},"end":{"x":256,"y":256},"width":256,"height":256},"complex":{"start":{"x":-2.5,"y":-1},"end":{"x":-2.033333333333333,"y":-0.5259259259259259},"width":0.4666666666666668,"height":0.4740740740740741}}"#).unwrap().into_raw();
+            iterateChunk(raw_config, raw_chunk_config);
+            CString::from_raw(raw_config);
+            CString::from_raw(raw_chunk_config);
+        }
     }
 }

@@ -1,6 +1,6 @@
 # Options
 
-MAKEFLAGS += -rR
+MAKEFLAGS += -rRs
 
 # Binaries
 
@@ -11,7 +11,7 @@ TAPE := $(BIN)/tape
 TAP_SPEC := $(BIN)/tap-spec
 NYC := $(BIN)/nyc
 ROLLUP := $(BIN)/rollup
-CC := java -jar node_modules/google-closure-compiler/compiler.jar
+CC := npx google-closure-compiler
 EM++ := em++
 CARGO := cargo
 
@@ -47,15 +47,15 @@ TEST_TARGETS := $(addprefix $(BUILD_DIR)/, $(patsubst %.ts, %.js, $(filter %.ts 
 all: $(TARGETS)
 
 test: $(TEST_TARGETS) $(TARGETS)
-	@NODE_PATH=$(SOURCE_BUILD_DIR):$(SOURCE_BUILD_DIR)/ts:$(TEST_BUILD_DIR)/ts $(TAPE) -r ./script/text-require $(TEST_TARGETS) | $(TAP_SPEC)
+	NODE_PATH=$(SOURCE_BUILD_DIR):$(SOURCE_BUILD_DIR)/ts:$(TEST_BUILD_DIR)/ts $(TAPE) -r ./script/text-require $(TEST_TARGETS) | $(TAP_SPEC)
 
 test-coverage: $(TEST_TARGETS) $(TARGETS)
-	@NODE_PATH=$(SOURCE_BUILD_DIR):$(SOURCE_BUILD_DIR)/ts:$(TEST_BUILD_DIR)/ts $(NYC) $(TAPE) -r ./script/text-require $(TEST_TARGETS)
+	NODE_PATH=$(SOURCE_BUILD_DIR):$(SOURCE_BUILD_DIR)/ts:$(TEST_BUILD_DIR)/ts $(NYC) $(TAPE) -r ./script/text-require $(TEST_TARGETS)
 
 release: all
-	@$(ROLLUP) --config
-	@#$(CC) $(shell xargs -a .cc.opts) --js $(SOURCE_BUILD_DIR)/ts/Fractal/Bundle.js --js_output_file build/src/ts/Fractal/Bundle.min.js
-	@$(CC) $(shell xargs -a .cc.opts) --js $(SOURCE_BUILD_DIR)/ts/Sandbox/Bundle.js --js_output_file build/src/ts/Sandbox/Bundle.min.js
+	$(ROLLUP) --config
+	$(CC) $(shell xargs -a .cc.opts) --js $(SOURCE_BUILD_DIR)/ts/Fractal/Bundle.js --js_output_file build/src/ts/Fractal/Bundle.min.js
+	$(CC) $(shell xargs -a .cc.opts) --js $(SOURCE_BUILD_DIR)/ts/Sandbox/Bundle.js --js_output_file build/src/ts/Sandbox/Bundle.min.js
 
 # VPaths
 
@@ -69,29 +69,29 @@ vpath %.rs $(SOURCE_DIR)/rs
 # Implicit rules
 
 $(SOURCE_BUILD_DIR)/ts/%.js: %.ts
-	@$(TSC) --project tsconfig.json
+	$(TSC) --project tsconfig.json
 
 $(SOURCE_BUILD_DIR)/html/%.html: %.html
-	@mkdir -p $(dir $@) && cp $< $@
+	mkdir -p $(dir $@) && cp $< $@
 
 $(SOURCE_BUILD_DIR)/json/%.json: %.json
-	@mkdir -p $(dir $@) && cp $< $@
+	mkdir -p $(dir $@) && cp $< $@
 
 $(SOURCE_BUILD_DIR)/css/%.css: %.css
-	@mkdir -p $(dir $@) && cp $< $@
+	mkdir -p $(dir $@) && cp $< $@
 
 $(SOURCE_BUILD_DIR)/cpp/%.js: %.cpp
-	@#mkdir -p $(dir $@) && $(EM++) -std=c++14 -s WASM=1 -s 'EXTRA_EXPORTED_RUNTIME_METHODS=["ccall", "stringToUTF8", "lengthBytesUTF8"]' -O3 --llvm-lto 3 --closure 1 -o $@ $<
+	#mkdir -p $(dir $@) && $(EM++) -std=c++14 -s WASM=1 -s 'EXTRA_EXPORTED_RUNTIME_METHODS=["ccall", "stringToUTF8", "lengthBytesUTF8", "_free"]' -O3 --llvm-lto 3 --closure 1 -o $@ $<
 
 $(SOURCE_BUILD_DIR)/rs/wasm32-unknown-unknown/debug/%.wasm: %.rs
-	@#mkdir -p $(dir $@) && $(CARGO) build --quiet --target wasm32-unknown-unknown
-	@#wasm-gc $(SOURCE_BUILD_DIR)/rs/wasm32-unknown-unknown/debug/mandelbrot.wasm
+	#mkdir -p $(dir $@) && $(CARGO) build --target wasm32-unknown-unknown
+	#wasm-gc $(SOURCE_BUILD_DIR)/rs/wasm32-unknown-unknown/debug/mandelbrot.wasm
 
 $(TEST_BUILD_DIR)/ts/%.js: %.ts
-	@$(TSC) --project tsconfig.json
+	$(TSC) --project tsconfig.json
 
 $(TEST_BUILD_DIR)/html/%.html: %.html
-	@mkdir -p $(dir $@) && cp $< $@
+	mkdir -p $(dir $@) && cp $< $@
 
 %::
 	$(warning No rule specified for target "$@")
@@ -110,14 +110,14 @@ $(filter %.html, $(TEST_TARGETS)): | $(TEST_BUILD_DIR)/html
 # Helper targets
 
 clean:
-	@rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR)
 
 lint:
-	@$(TSLINT) --project tsconfig.json $(filter %.ts, $(SOURCES)) $(filter %.ts, $(TESTS))
+	$(TSLINT) --project tsconfig.json $(filter %.ts, $(SOURCES)) $(filter %.ts, $(TESTS))
 
 setup: clean
-	@rm -rf node_modules
-	@npm install
+	rm -rf node_modules
+	npm install
 
 watch: all
 	parallel --ungroup --tty --jobs 0 ::: \

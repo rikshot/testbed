@@ -6,7 +6,7 @@ export class Quadtree<T> {
     private readonly _rectangle: Rectangle;
 
     private _count = 0;
-    private _size = 4;
+    private _size = 2;
 
     private _objects: T[];
     private _rectangles: Rectangle[];

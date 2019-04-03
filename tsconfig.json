@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "umd",
+    "module": "system",
     "target": "esnext",
     "strict": true,
     "rootDirs": [
@@ -10,7 +10,8 @@
     "baseUrl": "src/ts",
     "outDir": "build",
     "pretty": true,
-    "sourceMap": true
+    "sourceMap": true,
+    "incremental": true
   },
   "include": [
     "src/ts/**/*.ts",

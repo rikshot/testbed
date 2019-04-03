@@ -1,11 +1,7 @@
 {
-    "path_prefix": "/build/src/ts/",
-    "packages": {
-        "Fractal": {
-            "path": "Fractal"
-        },
-        "Sandbox": {
-            "path": "Sandbox"
-        }
+    "imports": {
+        "Fractal/": "/build/src/ts/Fractal/",
+        "Sandbox/": "/build/src/ts/Sandbox/",
+        "Tabs/": "/build/src/ts/Tabs/"
     }
 }

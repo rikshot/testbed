@@ -357,11 +357,7 @@ export class Mandelbrot {
             throw new Error('No WebAssembly support');
         }
         return Promise.all(
-            this.createChunks(config.rectangle).map((chunk) => {
-                console.dir(config.getDTO());
-                console.dir(chunk.getDTO());
-                return this._wasmIterateScheduler!.apply([config.getDTO(), chunk.getDTO()]);
-            }),
+            this.createChunks(config.rectangle).map((chunk) => this._wasmIterateScheduler!.apply([config.getDTO(), chunk.getDTO()])),
         ).then((results: IChunkResult[]) => {
             const { histogram, total } = this.getHistogram(config, results);
             return Promise.all(results.map(({ buffers, chunkConfig }) => {

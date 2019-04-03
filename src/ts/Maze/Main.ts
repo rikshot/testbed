@@ -63,7 +63,7 @@ class maze {
 			this.context.fillStyle = 'rgb(255, 0, 0)';
 			this.context.fillRect(
 				this.canvas.width / 2 - 10 * (this.width / 2) + this.player.x * 10 + 3,
-				this.canvas.height / 2 - 10 * (this.height / 2) + this.player.y * 10 + 3, 5, 5
+				this.canvas.height / 2 - 10 * (this.height / 2) + this.player.y * 10 + 3, 5, 5,
 			);
 		}
 
@@ -71,7 +71,7 @@ class maze {
 			this.context.fillStyle = 'rgb(0, 255, 0)';
 			this.context.fillRect(
 				this.canvas.width / 2 - 10 * (this.width / 2) + this.exit.x * 10 + 3,
-				this.canvas.height / 2 - 10 * (this.height / 2) + this.exit.y * 10 + 3, 5, 5
+				this.canvas.height / 2 - 10 * (this.height / 2) + this.exit.y * 10 + 3, 5, 5,
 			);
 		}
 	}

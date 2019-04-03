@@ -5,9 +5,22 @@
         <meta charset="utf-8" />
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous" />
         <link type="text/css" rel="stylesheet" href="/build/src/css/main.css" media="screen" />
-        <script type="systemjs-packagemap" src="/system.config.json"></script>
+        <script type="systemjs-importmap" src="/system.config.json"></script>
         <script src="/node_modules/systemjs/dist/system.min.js"></script>
         <script src="/node_modules/systemjs/dist/extras/amd.min.js"></script>
+        <script>
+            fetch('/build/src/rs/wasm32-unknown-unknown/debug/mandelbrot.wasm').then(response => {
+                const headers = new Headers(response.headers);
+                headers.set('Content-Type', 'application/wasm');
+                return WebAssembly.instantiateStreaming(new Response(response.body, {
+                    status: 200,
+                    statusText: 'OK',
+                    headers
+                }), {});
+            }).then(result => {
+                window.instance = result.instance;
+            });
+        </script>
     </head>
     <body>
         <canvas id="fractal" width="1920" height="1080"></canvas>
