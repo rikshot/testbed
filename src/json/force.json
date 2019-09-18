@@ -1,0 +1,27 @@
+{
+    "width": 500,
+    "height": 500,
+    "materials": [
+        {
+            "id": "default",
+            "density": 1,
+            "restitution": 0.25,
+            "color": [255, 255, 255, 255]
+        }
+    ],
+    "entities": [
+        {
+            "id": "box",
+            "shape": {
+                "type": "rectangle",
+                "width": 50,
+                "height": 50
+            },
+            "material": "default",
+            "position": [250, 285],
+            "forces:": [
+                [[10, 10], [250, 285]]
+            ]
+        }
+    ]
+}

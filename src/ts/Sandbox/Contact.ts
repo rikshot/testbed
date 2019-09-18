@@ -11,12 +11,15 @@ export class Contact {
 
     public readonly normal: Vector;
 
+    public force: number;
+
     constructor(a: Entity, b: Entity, ap: Vector, bp: Vector, normal: Vector) {
         this.a = a;
         this.b = b;
         this.ap = ap;
         this.bp = bp;
         this.normal = normal;
+        this.force = 0;
     }
 
     public get relative_velocity(): Vector {

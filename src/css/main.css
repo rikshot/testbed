@@ -1,4 +1,4 @@
-html, body, canvas {
+html, body {
 	margin: 0;
 	padding: 0;
 	position: absolute;
@@ -7,7 +7,16 @@ html, body, canvas {
 	background: #000;
 }
 
+canvas {
+	display: block;
+	width: 100vw;
+	height: 100vh;
+}
+
 #selection {
+	position: absolute;
+	top: 0;
+	left: 0;
 	background: transparent;
 }
 

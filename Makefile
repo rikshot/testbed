@@ -34,12 +34,12 @@ TARGETS := $(addprefix $(BUILD_DIR)/, \
 			$(patsubst src/rs/%.rs, src/rs/wasm32-unknown-unknown/debug/%.wasm, \
 			$(patsubst %.cpp, %.js, \
 			$(patsubst %.ts, %.js, \
-			$(filter %.ts %.html %.json %.css %.cpp %.rs, $(SOURCES))))))
+			$(filter %.ts %.html %.json %.css %.cpp %.rs %.mid, $(SOURCES))))))
 TEST_TARGETS := $(addprefix $(BUILD_DIR)/, $(patsubst %.ts, %.js, $(filter %.ts %.html, $(TESTS))))
 
 # Built-in targets
 
-.PHONY: all test test-coverage release clean lint setup watch
+.PHONY: all test test-coverage release clean lint lint-fix setup watch
 .NOTPARALLEL: $(TARGETS) $(TEST_TARGETS)
 
 # Main targets
@@ -54,7 +54,7 @@ test-coverage: $(TEST_TARGETS) $(TARGETS)
 
 release: all
 	$(ROLLUP) --config
-	$(CC) $(shell xargs -a .cc.opts) --js $(SOURCE_BUILD_DIR)/ts/Fractal/Bundle.js --js_output_file build/src/ts/Fractal/Bundle.min.js
+	#$(CC) $(shell xargs -a .cc.opts) --js $(SOURCE_BUILD_DIR)/ts/Fractal/Bundle.js --js_output_file build/src/ts/Fractal/Bundle.min.js
 	$(CC) $(shell xargs -a .cc.opts) --js $(SOURCE_BUILD_DIR)/ts/Sandbox/Bundle.js --js_output_file build/src/ts/Sandbox/Bundle.min.js
 
 # VPaths
@@ -65,6 +65,7 @@ vpath %.json $(SOURCE_DIR)/json
 vpath %.css $(SOURCE_DIR)/css
 vpath %.cpp $(SOURCE_DIR)/cpp
 vpath %.rs $(SOURCE_DIR)/rs
+vpath %.mid $(SOURCE_DIR)/midi
 
 # Implicit rules
 
@@ -78,6 +79,9 @@ $(SOURCE_BUILD_DIR)/json/%.json: %.json
 	mkdir -p $(dir $@) && cp $< $@
 
 $(SOURCE_BUILD_DIR)/css/%.css: %.css
+	mkdir -p $(dir $@) && cp $< $@
+
+$(SOURCE_BUILD_DIR)/midi/%.mid: %.mid
 	mkdir -p $(dir $@) && cp $< $@
 
 $(SOURCE_BUILD_DIR)/cpp/%.js: %.cpp
@@ -103,6 +107,7 @@ $(filter %.html, $(TARGETS)): | $(SOURCE_BUILD_DIR)/html
 $(filter %.json, $(TARGERS)): | $(SOURCE_BUILD_DIR)/json
 $(filter %.css, $(TARGETS)): | $(SOURCE_BUILD_DIR)/css
 $(filter %.wasm, $(TARGETS)): | $(SOURCE_BUILD_DIR)/rs
+$(filter %.mid, $(TARGETS)): | $(SOURCE_BUILD_DIR)/midi
 
 $(filter %.js, $(TEST_TARGETS)): | $(TEST_BUILD_DIR)/ts
 $(filter %.html, $(TEST_TARGETS)): | $(TEST_BUILD_DIR)/html
@@ -115,11 +120,12 @@ clean:
 lint:
 	$(TSLINT) --project tsconfig.json $(filter %.ts, $(SOURCES)) $(filter %.ts, $(TESTS))
 
+lint-fix: 
+	$(TSLINT) --project tsconfig.json --fix $(filter %.ts, $(SOURCES)) $(filter %.ts, $(TESTS))
+
 setup: clean
 	rm -rf node_modules
 	npm install
 
 watch: all
-	parallel --ungroup --tty --jobs 0 ::: \
-		'$(TSC) --project tsconfig.json --watch --preserveWatchOutput' \
-		'$(ROLLUP) --config rollup.config.fractal.js --watch'
+	$(TSC) --project tsconfig.json --watch --preserveWatchOutput

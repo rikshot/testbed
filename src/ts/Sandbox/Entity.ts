@@ -1,6 +1,6 @@
 import { Material } from 'Sandbox/Material.js';
 import { Shape } from 'Sandbox/Shape.js';
-import { Vector } from 'Sandbox/Vector.js';
+import { IVector, Vector } from 'Sandbox/Vector.js';
 
 export class Entity {
 
@@ -20,6 +20,8 @@ export class Entity {
 
     public kinematic: boolean = false;
     public frozen: boolean = false;
+
+    public forces: [IVector, IVector][] = [];
 
     constructor(shape: Shape, material: Material) {
         this.shape = shape;

@@ -3,7 +3,7 @@ import { Simulation } from 'Sandbox/Simulation.js';
 const canvas = document.getElementById('sandbox') as HTMLCanvasElement;
 const context = canvas.getContext('2d') as CanvasRenderingContext2D;
 
-Simulation.Fetch('http://localhost:8000/build/src/json/vertex_collision.json').then((simulation) => {
+Simulation.Fetch('http://localhost:8000/build/src/json/stack.json').then((simulation) => {
     canvas.width = simulation.width;
     canvas.height = simulation.height;
     context.transform(1, 0, 0, -1, 0, canvas.height);
@@ -32,10 +32,11 @@ Simulation.Fetch('http://localhost:8000/build/src/json/vertex_collision.json').t
             context.fillRect(contact.ap.x - 2.5, contact.ap.y - 2.5, 5, 5);
             context.fillRect(contact.bp.x - 2.5, contact.bp.y - 2.5, 5, 5);
 
-            context.strokeStyle = 'yellow';
+            context.strokeStyle = 'green';
             context.beginPath();
-            context.moveTo(contact.a.position.x, contact.a.position.y);
-            context.lineTo(contact.ap.x, contact.ap.y);
+            context.moveTo(contact.ap.x, contact.ap.y);
+            const force_vector = contact.normal.mul(contact.force).add(contact.ap);
+            context.lineTo(force_vector.x, force_vector.y);
             context.stroke();
         }
 

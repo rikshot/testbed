@@ -2,8 +2,7 @@ import { IRectangle, Rectangle } from 'Sandbox/Rectangle.js';
 
 export interface IBuffers {
     histogram: Uint32Array;
-    iterations: Uint32Array;
-    fractionals: Float64Array;
+    iterations: Float64Array;
     pixels?: Uint32Array;
 }
 

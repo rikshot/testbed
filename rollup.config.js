@@ -2,7 +2,7 @@ import include from 'rollup-plugin-includepaths';
 import commonjs from 'rollup-plugin-commonjs';
 
 export default [
-    {
+    /*{
         input: 'build/src/ts/Fractal/Main.js',
         output: {
             name: 'Fractal',
@@ -24,7 +24,7 @@ export default [
             clearScreen: false,
             include: 'build/src/ts/Fractal/**'
         }
-    },
+    },*/
     {
         input: 'build/src/ts/Sandbox/Main.js',
         output: {

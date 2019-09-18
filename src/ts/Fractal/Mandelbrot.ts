@@ -17,10 +17,11 @@ export enum RenderMode {
     TRANSFERRED,
     SHARED,
     WASM,
+    WEBGL,
 }
 
-type IterateChunk = (config: IConfig, chunkConfig: IChunkConfig, buffers?: IBuffers) => ITaskResult | Promise<ITaskResult>;
-type ColorChunk = (config: IConfig, chunkConfig: IChunkConfig, buffers: IBuffers, total: number) => ITaskResult | Promise<ITaskResult>;
+type IterateChunk = (config: IConfig, chunkConfig: IChunkConfig, buffers?: IBuffers) => ITaskResult | Promise<ITaskResult>;
+type ColorChunk = (config: IConfig, chunkConfig: IChunkConfig, buffers: IBuffers, total: number) => ITaskResult | Promise<ITaskResult>;
 
 export class Mandelbrot {
 
@@ -28,8 +29,7 @@ export class Mandelbrot {
         const NumberRange = (self as any).NumberRange;
 
         const histogram = new Uint32Array(config.iterations);
-        const iterations = buffers ? buffers.iterations : new Uint32Array(chunkConfig.image.width * chunkConfig.image.height);
-        const fractionals = buffers ? buffers.fractionals : new Float64Array(chunkConfig.image.width * chunkConfig.image.height);
+        const iterations = buffers ? buffers.iterations : new Float64Array(chunkConfig.image.width * chunkConfig.image.height);
 
         const widthRange = new NumberRange(chunkConfig.image.start.x, chunkConfig.image.end.x);
         const heightRange = new NumberRange(chunkConfig.image.start.y, chunkConfig.image.end.y);
@@ -54,7 +54,8 @@ export class Mandelbrot {
                     let iteration = 0;
                     let ii = 0;
                     let jj = 0;
-                    for (let i = 0, j = 0; ii + jj < Math.pow(2, 16) && iteration < config.iterations; ii = i * i, jj = j * j, ++iteration) {
+                    // tslint:disable-next-line:no-bitwise
+                    for (let i = 0, j = 0; ii + jj < (1 << 16) && iteration < config.iterations; ii = i * i, jj = j * j, ++iteration) {
                         const itemp = ii - jj + i0;
                         const jtemp = 2 * i * j + j0;
                         if (i === itemp && j === jtemp) {
@@ -68,7 +69,7 @@ export class Mandelbrot {
                     if (iteration < config.iterations) {
                         ++histogram[iteration];
                         ++total;
-                        fractionals[index] = (iteration + 1 - Math.log(Math.log(ii + jj) / 2 / Math.LN2) / Math.LN2) % 1;
+                        iterations[index] += 1.0 - Math.log(Math.log(ii + jj) / 2.0 / Math.LN2) / Math.LN2;
                     }
                 }
             }
@@ -82,11 +83,10 @@ export class Mandelbrot {
             return { result: { buffers, total, chunkConfig }, transferables: [histogram.buffer] };
         }
         return {
-            result: { buffers: { histogram, iterations, fractionals }, total, chunkConfig },
+            result: { buffers: { histogram, iterations }, total, chunkConfig },
             transferables: [
                 histogram.buffer,
                 iterations.buffer,
-                fractionals.buffer,
             ],
         };
     }
@@ -106,7 +106,7 @@ export class Mandelbrot {
         let index = buffers.pixels ? chunkConfig.image.start.y * chunkConfig.width + chunkConfig.image.start.x : 0;
         for (let y = chunkConfig.image.start.y; y < chunkConfig.image.end.y; ++y) {
             for (let x = chunkConfig.image.start.x; x < chunkConfig.image.end.x; ++x, ++index) {
-                const iteration = buffers.iterations[index];
+                const iteration = Math.floor(buffers.iterations[index]);
                 if (iteration < config.iterations) {
                     let hue = 0;
                     for (let i = 0; i < iteration; ++i) {
@@ -114,7 +114,7 @@ export class Mandelbrot {
                     }
                     const color1 = gradient(hue);
                     const color2 = gradient(hue + buffers.histogram[iteration] / total);
-                    pixels[index] = Color.Lerp(color1, color2, buffers.fractionals[index]).abgr();
+                    pixels[index] = Color.Lerp(color1, color2, buffers.iterations[index] % 1.0).abgr();
                 } else {
                     pixels[index] = Color.Black.abgr();
                 }
@@ -130,7 +130,7 @@ export class Mandelbrot {
     private static iterateChunkWasm(config: IConfig, chunkConfig: IChunkConfig) {
         return new Promise((resolve, reject) => {
             if (typeof Module === 'undefined') {
-                const Module = (self as IModuleWindow).Module = {
+                const Module = (self as unknown as IModuleWindow).Module = {
                     locateFile: (file: string) => 'http://localhost:8000/build/src/cpp/' + file,
                     onRuntimeInitialized: () => {
                         resolve(Module);
@@ -142,13 +142,11 @@ export class Mandelbrot {
             }
         }).then((Module: any) => {
             const rawConfig = JSON.stringify(config);
-            console.dir(rawConfig);
             const rawConfigLength = Module.lengthBytesUTF8(rawConfig) + 1;
             const rawConfigOffset = Module._malloc(rawConfigLength);
             Module.stringToUTF8(rawConfig, rawConfigOffset, rawConfigLength);
 
             const rawChunkConfig = JSON.stringify(chunkConfig);
-            console.dir(rawChunkConfig);
             const rawChunkConfigLength = Module.lengthBytesUTF8(rawChunkConfig) + 1;
             const rawChunkConfigOffset = Module._malloc(rawChunkConfigLength);
             Module.stringToUTF8(rawChunkConfig, rawChunkConfigOffset, rawChunkConfigLength);
@@ -162,12 +160,8 @@ export class Mandelbrot {
             Module._free(histogramOffset);
 
             const iterationsOffset = chunkResult[1];
-            const iterations = new Uint32Array(Module.HEAPU32.slice(iterationsOffset / 4, iterationsOffset / 4 + chunkConfig.image.width * chunkConfig.image.height));
+            const iterations = new Uint32Array(Module.HEAPF64.slice(iterationsOffset / 8, iterationsOffset / 8 + chunkConfig.image.width * chunkConfig.image.height));
             Module._free(iterationsOffset);
-
-            const fractionalsOffset = chunkResult[2];
-            const fractionals = new Float64Array(Module.HEAPF64.slice(fractionalsOffset / 8, fractionalsOffset / 8 + chunkConfig.image.width * chunkConfig.image.height));
-            Module._free(fractionalsOffset);
 
             const total = chunkResult[3];
 
@@ -175,11 +169,10 @@ export class Mandelbrot {
             Module._free(rawChunkConfigOffset);
 
             return {
-                result: { buffers: { histogram, iterations, fractionals }, total, chunkConfig },
+                result: { buffers: { histogram, iterations }, total, chunkConfig },
                 transferables: [
                     histogram.buffer,
                     iterations.buffer,
-                    fractionals.buffer,
                 ],
             };
         });
@@ -188,7 +181,7 @@ export class Mandelbrot {
     private static colorChunkWasm(config: IConfig, chunkConfig: IChunkConfig, buffers: IBuffers, total: number) {
         return new Promise((resolve, reject) => {
             if (typeof Module === 'undefined') {
-                const Module = (self as IModuleWindow).Module = {
+                const Module = (self as unknown as IModuleWindow).Module = {
                     locateFile: (file: string) => 'http://localhost:8000/build/src/cpp/' + file,
                     onRuntimeInitialized: () => {
                         resolve(Module);
@@ -216,13 +209,9 @@ export class Mandelbrot {
             const rawHistogram = new Uint32Array(Module.HEAPU32.buffer, rawHistogramOffset, config.iterations);
             rawHistogram.set(buffers.histogram);
 
-            const rawIterationsOffset = rawBuffers[1] = Module._malloc(chunkConfig.image.width * chunkConfig.image.height * 4);
-            const rawIterations = new Uint32Array(Module.HEAPU32.buffer, rawIterationsOffset, chunkConfig.image.width * chunkConfig.image.height);
+            const rawIterationsOffset = rawBuffers[1] = Module._malloc(chunkConfig.image.width * chunkConfig.image.height * 8);
+            const rawIterations = new Uint32Array(Module.HEAPF64.buffer, rawIterationsOffset, chunkConfig.image.width * chunkConfig.image.height);
             rawIterations.set(buffers.iterations);
-
-            const rawFractionalsOffset = rawBuffers[2] = Module._malloc(chunkConfig.image.width * chunkConfig.image.height * 8);
-            const rawFractionals = new Float64Array(Module.HEAPF64.buffer, rawFractionalsOffset, chunkConfig.image.width * chunkConfig.image.height);
-            rawFractionals.set(buffers.fractionals);
 
             const pixelsOffset = Module.ccall('colorChunk', 'number', ['number', 'number', 'number', 'number'], [rawConfigOffset, rawChunkConfigOffset, rawBuffersOffset, total]);
             const pixels = new Uint32Array(Module.HEAPU32.slice(pixelsOffset / 4, pixelsOffset / 4 + chunkConfig.image.width * chunkConfig.image.height));
@@ -230,7 +219,6 @@ export class Mandelbrot {
             Module._free(pixelsOffset);
             Module._free(rawHistogramOffset);
             Module._free(rawIterationsOffset);
-            Module._free(rawFractionalsOffset);
             Module._free(rawBuffersOffset);
             Module._free(rawConfigOffset);
             Module._free(rawChunkConfigOffset);
@@ -299,6 +287,9 @@ export class Mandelbrot {
 
             case RenderMode.WASM:
                 return this.renderWasm(config);
+
+            case RenderMode.WEBGL:
+                return this.renderWebGL(config);
         }
     }
 
@@ -311,7 +302,7 @@ export class Mandelbrot {
                 buffers.histogram = histogram;
                 return this._colorScheduler.apply(
                     [config.getDTO(), chunkConfig, buffers, total],
-                    [buffers.iterations.buffer, buffers.fractionals.buffer],
+                    [buffers.iterations.buffer],
                 ).then(({ pixels }) => {
                     this._context.putImageData(
                         new ImageData(new Uint8ClampedArray(pixels.buffer), chunkConfig.image.width, chunkConfig.image.height),
@@ -329,8 +320,7 @@ export class Mandelbrot {
         }
         this._buffers = {
             histogram: new Uint32Array(new SharedArrayBuffer(config.iterations * Uint32Array.BYTES_PER_ELEMENT)),
-            iterations: new Uint32Array(new SharedArrayBuffer(this._width * this._height * Uint32Array.BYTES_PER_ELEMENT)),
-            fractionals: new Float64Array(new SharedArrayBuffer(this._width * this._height * Float64Array.BYTES_PER_ELEMENT)),
+            iterations: new Float64Array(new SharedArrayBuffer(this._width * this._height * Float64Array.BYTES_PER_ELEMENT)),
             pixels: new Uint32Array(new SharedArrayBuffer(this._width * this._height * Uint32Array.BYTES_PER_ELEMENT)),
         };
         return Promise.all(
@@ -364,7 +354,7 @@ export class Mandelbrot {
                 buffers.histogram = histogram;
                 return this._wasmColorScheduler!.apply(
                     [config.getDTO(), chunkConfig, buffers, total],
-                    [buffers.iterations.buffer, buffers.fractionals.buffer],
+                    [buffers.iterations.buffer],
                 ).then(({ pixels }) => {
                     this._context.putImageData(
                         new ImageData(new Uint8ClampedArray(pixels.buffer), chunkConfig.image.width, chunkConfig.image.height),
@@ -374,6 +364,34 @@ export class Mandelbrot {
                 });
             }));
         });
+    }
+
+    private renderWebGL(config: Config) {
+        const canvas = document.createElement('canvas');
+        const gl: WebGLRenderingContext = canvas.getContext('webgl')!;
+
+        const compileShader = (source: string, type: number) => {
+            const shader = gl.createShader(type)!;
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                throw new Error('Could not compile shader:' + gl.getShaderInfoLog(shader));
+            }
+            return shader;
+        };
+
+        const createProgram = (vertexShader: WebGLShader, fragmentShader: WebGLShader) => {
+            const program = gl.createProgram()!;
+            gl.attachShader(program, vertexShader);
+            gl.attachShader(program, fragmentShader);
+            gl.linkProgram(program);
+            if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+                throw new Error('Program filed to link:' + gl.getProgramInfoLog(program));
+            }
+            return program;
+        };
+
+        return Promise.resolve();
     }
 
     private createChunks(rectangle: Rectangle, buffers?: IBuffers) {
@@ -410,12 +428,13 @@ export class Mandelbrot {
 
     private getHistogram(config: Config, results: IChunkResult[]) {
         const histogram = this._buffers ? this._buffers.histogram : new Uint32Array(config.iterations);
+        let total = 0;
         results.forEach((result) => {
             result.buffers.histogram.forEach((iterations, index) => {
                 histogram[index] += iterations;
             });
+            total += result.total;
         });
-        const total = results.reduce((acc, cur) => acc + cur.total, 0);
         return { histogram, total };
     }
 

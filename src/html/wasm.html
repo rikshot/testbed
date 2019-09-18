@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+    <head>
+        <title>WASM</title>
+        <meta charset="utf-8" />
+    </head>
+    <body>
+        <script>
+            (async () => {
+                let response = fetch('http://localhost:8000/build/src/asc/main.wasm').then(response => {
+                    return new Response(response.body, {
+                        headers: {
+                            'Content-Type': 'application/wasm'
+                        }
+                    });
+                });
+                let module = await WebAssembly.instantiateStreaming(response);
+                console.dir(module);
+            })();
+        </script>
+    </body>
+</html>

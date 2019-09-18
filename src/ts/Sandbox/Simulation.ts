@@ -39,6 +39,7 @@ interface IEntityJSON {
     position: IVectorJSON;
     orientation?: number;
     kinematic?: boolean;
+    forces?: [IVectorJSON, IVectorJSON][];
 }
 
 export interface ISimulationJSON {
@@ -104,6 +105,10 @@ export class Simulation {
             if (typeof kinematic === 'boolean') {
                 entity.kinematic = kinematic;
             }
+            const forces = json_entity.forces;
+            if (Array.isArray(forces)) {
+                entity.forces = forces.map(([[ax, ay], [bx, by]]) => [new Vector(ax, ay), new Vector(bx, by)]);
+            }
             simulation.entities.push(entity);
         });
         return simulation;
@@ -141,6 +146,10 @@ export class Simulation {
             if (!entity.kinematic && !entity.frozen) {
                 entity.linear_acceleration = new Vector(0, -9.81);
                 entity.angular_acceleration = 0;
+
+                for (const force of entity.forces) {
+
+                }
             }
         }
 
@@ -155,11 +164,11 @@ export class Simulation {
         if (this._contacts.length > 0) {
             // this.resolve_collisions();
 
-            for (let island of this._contacts) {
+            /*for (let island of this._contacts) {
                 island = island.filter((contact) => {
                     return contact.relative_velocity.length_squared() >= 0;
                 });
-            }
+            }*/
 
             this.resolve_contacts();
         }
@@ -413,18 +422,17 @@ export class Simulation {
                 const b = contact.b;
                 const normal = contact.normal;
 
-                const force = f[i];
-                if (!Number.isNaN(force) && Number.isFinite(force)) {
-                    if (!a.kinematic) {
-                        const ar = contact.ap.sub(a.position);
-                        a.linear_acceleration = a.linear_acceleration.add(normal.mul(force / a.mass));
-                        a.angular_acceleration += ar.cross(normal.mul(force / a.moment));
-                    }
-                    if (!b.kinematic) {
-                        const br = contact.bp.sub(b.position);
-                        b.linear_acceleration = b.linear_acceleration.sub(normal.mul(force / b.mass));
-                        b.angular_acceleration -= br.cross(normal.mul(force / b.moment));
-                    }
+                let force = f[i];
+                force = contact.force = Number.isNaN(force) || !Number.isFinite(force) ? 0 : force;
+                if (!a.kinematic) {
+                    const ar = contact.ap.sub(a.position);
+                    a.linear_acceleration = a.linear_acceleration.add(normal.mul(force / a.mass));
+                    a.angular_acceleration += ar.cross(normal.mul(force / a.moment));
+                }
+                if (!b.kinematic) {
+                    const br = contact.bp.sub(b.position);
+                    b.linear_acceleration = b.linear_acceleration.sub(normal.mul(force / b.mass));
+                    b.angular_acceleration -= br.cross(normal.mul(force / b.moment));
                 }
             }
         }
